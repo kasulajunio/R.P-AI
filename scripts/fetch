@@ -1,0 +1,19 @@
+#!/usr/bin/env bash
+# R.P AI: Bash entrypoint for the approved Forge catalog.
+set -euo pipefail
+if [[ $# -eq 0 ]]; then
+    printf "Uso: bash scripts/fetch {plan|install} jq [--allow-network] [--directory CAMINHO]\n" >&2
+    exit 2
+fi
+SCRIPT_DIR="$(CDPATH= cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd -P)"
+PROJECT_DIR="$(dirname -- "$SCRIPT_DIR")"
+if command -v python3 >/dev/null 2>&1; then
+    PYTHON=python3
+elif command -v python >/dev/null 2>&1; then
+    PYTHON=python
+else
+    printf "Erro: Python 3.10+ necessario; nenhum pacote foi instalado.\n" >&2
+    exit 127
+fi
+# No arbitrary URLs, shell evaluation, fallback or success echo.
+exec "$PYTHON" "$PROJECT_DIR/rpa.py" forge "$@"
