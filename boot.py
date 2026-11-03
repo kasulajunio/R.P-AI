@@ -1,8 +1,9 @@
-# SPDX-License-Identifier: MIT
-"""R.P AI. Uso livre sob MIT, sem garantias adicionais. Veja LICENSE/TERMS.md.
-Exibir termos nao representa aceite automatico. Venv nao e sandbox.
+"""R.P AI, MIT, Copyright 2026 Fabio. Consulte LICENSE e TERMS.md.
+Uso livre sob MIT; sem garantia nos limites da lei. Nao ha aceite juridico
+automatico, instalacao de pacotes do sistema ou download de modelos.
 """
-from official_core.bootstrap import main
+import sys
+from official_core.launcher import main
 
 if __name__ == "__main__":
-    raise SystemExit(main())
+    raise SystemExit(main([*sys.argv[1:], "install"]))

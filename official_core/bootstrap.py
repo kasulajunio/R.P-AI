@@ -1,74 +1,55 @@
-# SPDX-License-Identifier: MIT
-"""Boot nao interativo: prepara ferramentas locais, sem instalar pacotes globais."""
-import argparse
+"""Boot local. Licenca MIT, Copyright 2026 Fabio. Consulte LICENSE.
+Uso, copia, modificacao e distribuicao permitidos sob MIT. Sem garantia, nos
+limites da lei. Aviso exibido nao equivale a aceite juridico automatico.
+Nao instala pacotes do sistema, nao eleva privilegios e nao baixa modelos.
+"""
 import json
 import os
 import platform
 import subprocess
 import sys
+import venv
 from .engine import MasterEngine
-from .cli import main as run_command
 
-TERMS = """R.P AI - Copyright 2026 Fabio - Licenca MIT.
-Uso, copia, modificacao, distribuicao e uso comercial permitidos,
-preservando o aviso de copyright e a licenca. Consulte LICENSE e TERMS.md.
-Software fornecido no estado em que se encontra, sem garantias adicionais,
-nos limites permitidos pela lei. O operador responde pelo proprio uso.
-Isto e um aviso, nao uma declaracao de aceite automatico.
-Venv nao e sandbox. Nenhum modelo e baixado ou executado neste boot.
-"""
+NOTICE = "R.P AI | MIT | Copyright 2026 Fabio. Sem garantia, nos limites da lei. Consulte LICENSE e TERMS.md. Termos exibidos, nao aceitos automaticamente."
 
 
 def detect_system(system=None, environ=None):
-    environment = os.environ if environ is None else environ
-    name = (platform.system() if system is None else system).lower()
-    if environment.get("TERMUX_VERSION") or "com.termux" in environment.get("PREFIX", ""):
+    system = platform.system() if system is None else system
+    environ = os.environ if environ is None else environ
+    if environ.get("TERMUX_VERSION") or "com.termux" in environ.get("PREFIX", ""):
         return "termux"
-    if name == "android" or (name == "linux" and environment.get("ANDROID_ROOT")):
+    if system.lower() == "android" or (system == "Linux" and hasattr(sys, "getandroidapilevel")):
         return "android"
-    known = {"linux": "linux", "windows": "windows", "darwin": "macos"}
-    if name not in known:
-        raise RuntimeError("Sistema nao suportado: " + name)
-    return known[name]
+    return {"Linux": "linux", "Windows": "windows", "Darwin": "macos"}.get(system, "unsupported")
 
 
-def bootstrap(root=".core", create_venv=True):
+def install(root=None, create_venv=True):
     if sys.version_info < (3, 10):
-        raise RuntimeError("Python 3.10 ou superior e obrigatorio")
+        raise RuntimeError("Requer Python 3.10 ou superior")
     system = detect_system()
+    if system == "unsupported":
+        raise RuntimeError("Sistema ainda nao suportado")
     engine = MasterEngine(root)
     structure = engine.setup_structure()
-    database = engine._database()
-    database.close()
-    ai = engine.deploy_ai_engine(create_venv=create_venv)
+    connection = engine._database()
+    connection.close()
+    result = {"status": "core_ready", "system": system, "workspace": structure["workspace"], "models_downloaded": False, "network_started": False, "system_packages_installed": False, "venv": None}
     if create_venv:
-        # Executa o Python do ambiente criado, sem shell e sem ativacao manual.
-        subprocess.run([ai["python"], "-I", "-c", "import sys; assert sys.prefix != sys.base_prefix; print(sys.version.split()[0])"], check=True, capture_output=True, text=True, timeout=30, shell=False)
-    return {"system": system, "status": "boot_complete", "workspace": structure["workspace"], "ai_environment": ai, "global_packages_installed": False, "models_downloaded": False, "inference_implemented": False, "network_started": False, "diagnostics": engine.doctor()}
-
-
-def main(argv=None):
-    parser = argparse.ArgumentParser(description="Boot offline R.P AI, sem interacao ou sudo")
-    parser.add_argument("--root", default=".core", help="Workspace dedicado")
-    parser.add_argument("--without-venv", action="store_true", help="Prepara ferramentas sem criar venv")
-    parser.add_argument("--run", nargs=argparse.REMAINDER, help="Comando local depois do boot; exemplo: --run note-list")
-    args = parser.parse_args(argv)
-    if args.run is not None and not args.run:
-        parser.error("Informe um comando depois de --run")
-    if args.run and (args.run[0] == "--root" or "--root" in args.run):
-        parser.error("Configure o workspace com --root antes de --run")
-    print(TERMS)
-    try:
-        result = bootstrap(args.root, create_venv=not args.without_venv)
-        print(json.dumps(result, ensure_ascii=False, indent=2))
-        if args.run:
-            return run_command(["--root", args.root] + args.run)
-        return 0
-    except (OSError, ValueError, RuntimeError, subprocess.SubprocessError) as error:
-        print("Boot falhou: " + str(error), file=sys.stderr)
-        print("Nenhuma instalacao global foi tentada. Veja docs/TERMINALS.md e preserve o workspace existente.", file=sys.stderr)
-        return 1
-
-
-if __name__ == "__main__":
-    raise SystemExit(main())
+        directory = engine.path("AI_Local_Engine/ai_env")
+        interpreter = engine.path("AI_Local_Engine/ai_env/" + ("Scripts/python.exe" if os.name == "nt" else "bin/python"))
+        if directory.exists() and not interpreter.is_file():
+            raise RuntimeError("Venv incompleto existente; preserve dados e use --no-venv ou outro workspace")
+        if not directory.exists():
+            # Sem ensurepip nem rede: nucleo usa exclusivamente a biblioteca padrao.
+            venv.EnvBuilder(with_pip=False, symlinks=False, clear=False, upgrade_deps=False).create(str(directory))
+        engine._check_chain(interpreter)
+        if not interpreter.is_file():
+            raise RuntimeError("Criacao de venv nao foi confirmada")
+        probe = subprocess.run([str(interpreter), "-I", "-c", "import json,sys; print(json.dumps(dict(prefix=sys.prefix,version=list(sys.version_info[:2]))))"], check=True, capture_output=True, text=True, timeout=20, shell=False)
+        info = json.loads(probe.stdout)
+        from pathlib import Path
+        if Path(info["prefix"]).resolve() != directory.resolve() or tuple(info["version"]) < (3, 10):
+            raise RuntimeError("Interpretador do ambiente nao corresponde ao workspace")
+        result["venv"] = str(interpreter)
+    return result
