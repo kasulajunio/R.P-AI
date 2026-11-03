@@ -1,11 +1,11 @@
 # R.P AI: status verificavel
 
-Versao 0.1.0: fundacao privada baseada no codigo fornecido por Fabio. Nome anterior Fabio Official Core; pacote official_core e pasta padrao foram preservados por compatibilidade.
+Codigo base validado no commit 1de393d31c8b52eaea73b6750d4a93e63b8d726d nos seis jobs Linux, Windows e macOS Intel, com Python 3.10/3.12.
 
-Implementado: estrutura, CLI, validacao de caminhos, venv explicito, hash SHA-256, notas SQLite e configuracoes iniciais.
+A ampliacao introduz notas com busca, leitura, edicao e exclusao confirmada; tarefas persistentes com conclusao e reabertura; exportacao JSON sem sobrescrita; backup SQLite pela API nativa com quick_check; CLI e testes para os fluxos novos; instrucoes de terminais por sistema.
 
-No commit d56c8c3aec089dc882e5f3dd876e58ae7dcdd2eb, os checks Linux e Windows passaram com Python 3.10 e 3.12. Os jobs macos-latest ficaram aguardando runners disponiveis, sem executar; isso nao prova nem falha nem aprovacao no macOS.
+A CI da revisao atual e a fonte de verdade para a validacao da ampliacao. Testes anteriores nao comprovam que uma revisao posterior passou. O checker de credenciais examina blobs do historico alcancavel e alguns padroes conhecidos; nao e auditoria e nao garante ausencia de segredos ou dados pessoais.
 
-A revisao atual troca somente a imagem macOS para macos-15-intel e acrescenta smoke test em processos reais: inicializacao repetida, preparacao de cinco modulos, criacao/execucao/reutilizacao do venv, teste de IA sem PyTorch, persistencia SQLite, hash e rede desativada. Consulte os checks do commit atual antes de afirmar aprovacao final.
+O historico de autoria inclui e-mail pessoal. A publicacao solicitada pelo titular aguarda decisao sobre essa exposicao. O repositorio continua privado, sem mudanca de licenca.
 
-Nao validado: GPU/CUDA reais, modelos, inferencia e Android/Termux em aparelho real. Cofre criptografado, engine de jogos e tuneis nao sao implementacoes completas. Nenhuma alteracao de visibilidade publica foi feita. Documentos legados que mencionem Fabio Official Core referem-se ao mesmo projeto, agora R.P AI.
+Ainda nao implementado: inferencia/chat com modelo, cofre criptografado, motor de jogos e tuneis. Preparar diretorios nao implementa essas funcoes. Ainda nao validado: Android/Termux em aparelho real e GPU/CUDA. Banco, JSON e backups nao sao cifrados.

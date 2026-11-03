@@ -21,9 +21,13 @@ jobs:
         python: ["3.10", "3.12"]
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
       - uses: actions/setup-python@v5
         with:
           python-version: ${{ matrix.python }}
+      - name: Credential patterns in reachable history
+        run: python scripts/check_secrets.py
       - name: Compile sources
         run: python -m compileall -q official_core engine.py tests scripts
       - name: Offline regression suite
