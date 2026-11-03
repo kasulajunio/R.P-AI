@@ -1,0 +1,90 @@
+name: Extended authorized tests
+on:
+  push:
+    branches: [feat/official-foundation]
+    paths: [.github/workflows/extended-verification.yml, scripts/endurance_probe.py, scripts/ai_variants.py]
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: extended-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  endurance:
+    name: Five minute memory and forced crash recovery
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Compile probes
+        run: python -m py_compile scripts/endurance_probe.py scripts/ai_variants.py
+      - name: Five minute service endurance and three SIGKILL cases
+        run: python scripts/endurance_probe.py --seconds 300
+      - name: Preserve measurements including failures
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: endurance-and-recovery
+          path: endurance-evidence.json
+          if-no-files-found: warn
+          retention-days: 7
+  ai-variants:
+    name: Four real generated app requests on CPU and Chrome
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    env:
+      OLLAMA_HOST: 127.0.0.1:11434
+      OLLAMA_NO_CLOUD: "1"
+      OLLAMA_NUM_PARALLEL: "1"
+      OLLAMA_MODELS: /tmp/rpa-extended-models
+      CUDA_VISIBLE_DEVICES: "-1"
+      ROCR_VISIBLE_DEVICES: "-1"
+      OLLAMA_VULKAN: "0"
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Download pinned official test runtime and verify hash
+        shell: bash
+        run: |
+          set -euo pipefail
+          curl --fail --location --retry 3 --output "$RUNNER_TEMP/ollama.tar.zst" https://github.com/ollama/ollama/releases/download/v0.40.14/ollama-linux-amd64.tar.zst
+          printf "993e83d08c3d13d17c55009a3e2664c8a25445e644aec3a68bef5abb6abce67d  %s\n" "$RUNNER_TEMP/ollama.tar.zst" | sha256sum --check -
+          mkdir -p "$RUNNER_TEMP/ollama"
+          tar --zstd -xf "$RUNNER_TEMP/ollama.tar.zst" -C "$RUNNER_TEMP/ollama"
+          "$RUNNER_TEMP/ollama/bin/ollama" serve > "$RUNNER_TEMP/ollama.log" 2>&1 &
+          for attempt in $(seq 1 60); do
+            if curl --fail --silent http://127.0.0.1:11434/api/version; then break; fi
+            sleep 1
+          done
+          curl --fail --silent http://127.0.0.1:11434/api/version
+      - name: Explicit test environment model download
+        run: |
+          "$RUNNER_TEMP/ollama/bin/ollama" pull qwen2.5-coder:0.5b
+      - name: Four independent real generations and browser behavior
+        run: python scripts/ai_variants.py
+      - name: Verify actual CPU residency
+        if: always()
+        shell: bash
+        run: |
+          "$RUNNER_TEMP/ollama/bin/ollama" ps | tee extended-cpu-evidence.txt
+          grep -q "100% CPU" extended-cpu-evidence.txt
+      - name: Preserve evidence without model or device data
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: varied-apps-unreviewed-evidence
+          path: |
+            ai-variants-evidence.json
+            extended-cpu-evidence.txt
+            ai-variant-artifacts/
+          if-no-files-found: warn
+          retention-days: 7
