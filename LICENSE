@@ -1,11 +1,21 @@
-LICENCA PROPRIETARIA - USO PRIVADO AUTORIZADO
+MIT License
 
-Copyright 2026 Fabio. Todos os direitos reservados, nos limites da lei e dos direitos validamente detidos pelo titular.
+Copyright (c) 2026 Fabio
 
-Este repositorio nao e publicado sob licenca de codigo aberto. Acesso tecnico nao equivale a autorizacao para usar, copiar, distribuir, sublicenciar, vender, tornar publico ou disponibilizar o codigo a terceiros. Qualquer permissao alem da avaliacao ou uso privado expressamente autorizado pelo titular deve ser obtida por escrito.
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the Software), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
 
-Esta declaracao alcanca somente os materiais cujos direitos pertencem ao titular. Componentes, bibliotecas, modelos, marcas e contribuicoes de terceiros continuam sujeitos as respectivas licencas e direitos.
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
 
-O material e experimental, fornecido no estado em que se encontra e sem garantia contratual de desempenho, adequacao, continuidade ou ausencia de falhas, na maxima extensao permitida por lei. Nao se excluem direitos irrenunciaveis nem responsabilidades que a legislacao aplicavel nao permita excluir.
-
-Consulte TERMS.md e SECURITY.md. Este texto e uma minuta informativa e deve passar por revisao juridica antes de distribuicao comercial ou concessao de acesso a terceiros.
+THE SOFTWARE IS PROVIDED AS IS, WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
