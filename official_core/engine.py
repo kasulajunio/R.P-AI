@@ -10,6 +10,7 @@ import shutil
 import sqlite3
 import subprocess
 import sys
+import tempfile
 import venv
 from pathlib import Path
 
@@ -72,20 +73,28 @@ class MasterEngine:
         target = self.path(relative)
         target.parent.mkdir(parents=True, exist_ok=True, mode=0o700)
         self._check_chain(target)
-        # Windows pode responder PermissionError, nao FileExistsError, para diretorios.
-        # Recuse o tipo antes de abrir; a criacao continua exclusiva contra sobrescrita.
-        if target.exists() and not target.is_file():
-            raise SafetyError("O destino existente nao e arquivo regular")
-        flags = os.O_WRONLY | os.O_CREAT | os.O_EXCL | getattr(os, "O_NOFOLLOW", 0)
-        try:
-            descriptor = os.open(target, flags, 0o600)
-        except FileExistsError:
+        if target.exists():
             if not target.is_file():
                 raise SafetyError("O destino existente nao e arquivo regular")
             return False
-        with os.fdopen(descriptor, "w", encoding="utf-8", newline="\n") as stream:
-            stream.write(content)
-        return True
+        descriptor, temporary = tempfile.mkstemp(prefix=".rpa-write-", dir=target.parent)
+        staging = Path(temporary)
+        try:
+            with os.fdopen(descriptor, "w", encoding="utf-8", newline="\n") as stream:
+                stream.write(content)
+                stream.flush()
+                os.fsync(stream.fileno())
+            self._check_chain(target)
+            try:
+                # Publish the completed file exclusively; never expose partial writes.
+                os.link(staging, target)
+            except FileExistsError:
+                if not target.is_file():
+                    raise SafetyError("O destino existente nao e arquivo regular")
+                return False
+            return True
+        finally:
+            staging.unlink(missing_ok=True)
 
     def setup_structure(self):
         self._check_chain(self.base_dir)
