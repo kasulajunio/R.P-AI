@@ -20,9 +20,13 @@ class EntryPointTests(unittest.TestCase):
     def test_boot_without_pip(self):
         result = self.execute("boot.py", "--root", str(self.root), "--no-venv")
         self.assertEqual(result.returncode, 0, result.stderr)
-        self.assertEqual(json.loads(result.stdout)["status"], "core_ready")
+        payload = json.loads(result.stdout)
+        # boot.py chama bootstrap completo; install isolado retorna core_ready.
+        self.assertEqual(payload["status"], "boot_complete")
+        self.assertFalse(payload["inference_implemented"])
         self.assertIn("MIT", result.stderr)
         self.assertEqual(len(list((self.root / "logs").glob("*.json"))), 1)
+        self.assertTrue(Path(payload["report"]).is_file())
 
     def test_new_cli_real_data(self):
         result = self.execute("rpa.py", "--root", str(self.root), "run", "note-add", "Synthetic example")

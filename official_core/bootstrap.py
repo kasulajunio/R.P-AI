@@ -11,6 +11,7 @@ import platform
 import sqlite3
 import subprocess
 import sys
+import time
 import venv
 from .engine import MasterEngine
 from .cli import main as run_command
@@ -78,15 +79,23 @@ def main(argv=None):
         parser.error("Informe um comando depois de --run")
     if args.run and any(token == "--root" or token.startswith("--root=") for token in args.run):
         parser.error("Configure --root antes de --run")
-    print(NOTICE)
+    print(NOTICE, file=sys.stderr)
+    started = time.monotonic()
+    # Tardio: launcher importa install deste modulo.
+    from .launcher import write_report
     try:
         result = bootstrap(args.root, create_venv=not args.without_venv)
+        result["report"] = write_report(args.root, "boot", True, started)
         print(json.dumps(result, ensure_ascii=False, indent=2))
         return run_command(["--root", args.root] + args.run) if args.run else 0
     except (OSError, ValueError, RuntimeError, sqlite3.Error, subprocess.SubprocessError) as error:
         message = "Verificacao do interpretador falhou" if isinstance(error, subprocess.SubprocessError) else str(error)
         print("Boot falhou: " + message, file=sys.stderr)
         print("Nenhuma instalacao global foi tentada. Veja docs/TERMINALS.md e preserve o workspace.", file=sys.stderr)
+        try:
+            write_report(args.root, "boot", False, started, type(error).__name__)
+        except (OSError, ValueError, RuntimeError, sqlite3.Error):
+            print("Relatorio indisponivel", file=sys.stderr)
         return 1
 
 
