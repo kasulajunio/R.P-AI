@@ -1,0 +1,17 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "fabio-official-core"
+version = "0.1.0"
+description = "Fundacao modular privada de Fabio"
+requires-python = ">=3.10"
+authors = [{name = "Fabio"}]
+dependencies = []
+
+[project.scripts]
+fabio-core = "official_core.cli:main"
+
+[tool.setuptools.packages.find]
+include = ["official_core*"]
