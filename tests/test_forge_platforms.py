@@ -64,9 +64,17 @@ class PlatformTests(unittest.TestCase):
         bad = ["../escape", "/absolute", "pkg/../escape", "pkg/a:b", "pkg\\escape", "elsewhere/file"]
         for index, name in enumerate(bad):
             package = self.base / (str(index) + ".zip")
+            # ZipInfo normalizes backslashes on Windows. Replace a same-length
+            # placeholder in both ZIP headers to preserve hostile raw names.
+            placeholder = "x" * len(name)
             with zipfile.ZipFile(package, "w") as archive:
                 archive.writestr("pkg/rg.exe", pe())
-                archive.writestr(name, b"bad")
+                archive.writestr(placeholder, b"bad")
+            payload = package.read_bytes()
+            self.assertEqual(payload.count(placeholder.encode("ascii")), 2)
+            package.write_bytes(payload.replace(placeholder.encode("ascii"), name.encode("ascii")))
+            with zipfile.ZipFile(package) as archive:
+                self.assertEqual(archive.infolist()[1].orig_filename, name)
             with self.subTest(name=name), self.assertRaises(ValueError):
                 archives.copy_selected(package, self.base / (str(index) + ".exe"), "pkg/rg.exe", "windows-x86_64", "zip")
         self.assertFalse((self.base / "escape").exists())
