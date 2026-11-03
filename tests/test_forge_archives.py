@@ -1,6 +1,7 @@
 import contextlib
 import hashlib
 import io
+import os
 from pathlib import Path
 import tarfile
 import tempfile
@@ -42,6 +43,7 @@ def configured(data, digest=None, size=None):
         yield network
 
 
+@unittest.skipIf(os.name == "nt", "POSIX archive fixtures; real execution is tested on native Linux ARM64")
 class ArchiveTests(unittest.TestCase):
     def setUp(self):
         self.temp = tempfile.TemporaryDirectory()
@@ -83,6 +85,7 @@ class ArchiveTests(unittest.TestCase):
     def test_invalid_archives_leave_no_published_binary(self):
         entries = [
             [("pkg/rg", ELF), ("../outside", b"bad")],
+            [("pkg/rg", ELF), ("/outside", b"bad")],
             [("pkg/rg", ELF), ("pkg/link", None)],
             [("pkg/rg", ELF), ("pkg/rg", ELF)],
             [("pkg/other", ELF)],
