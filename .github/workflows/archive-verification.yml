@@ -3,7 +3,10 @@ on:
   push:
     branches: [feat/official-foundation]
     paths:
+      - official_core/console.py
+      - official_core/forge_command.py
       - official_core/forge_archives.py
+      - tests/test_forge_command.py
       - tests/test_forge_archives.py
       - scripts/verify_archive_download.py
       - .github/workflows/archive-verification.yml
@@ -18,12 +21,19 @@ jobs:
       - uses: actions/checkout@v4
         with:
           persist-credentials: false
+          fetch-depth: 0
       - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
-      - name: Offline regression tests
-        run: python -m unittest discover -s tests -p "test_forge*.py" -v
-      - name: Explicit real download and native ARM64 execution
+      - name: Credential patterns in history
+        run: python scripts/check_secrets.py
+      - name: Compile sources
+        run: python -m compileall -q official_core tests scripts rpa.py
+      - name: Full offline regression tests
+        run: python -m unittest discover -s tests -v
+      - name: Offline smoke test
+        run: python scripts/smoke.py
+      - name: Explicit real CLI download and functional ARM64 tests
         env:
           PYTHONPATH: .
         run: python scripts/verify_archive_download.py

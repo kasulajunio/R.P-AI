@@ -12,6 +12,8 @@ from . import launcher
 from .bootstrap import detect_system
 from .engine import MasterEngine
 from .forge import main as forge_main
+from .forge_command import main as forge_batch_main
+from .forge_archives import CATALOG as ARCHIVE_CATALOG
 
 VERSION = "0.2.0"
 
@@ -66,7 +68,7 @@ def build_parser():
             action.add_parser("status", help="Diagnostico local sem rede ou execucao de modelo")
             forge = action.add_parser("forge", help="Plano offline ou download do catalogo aprovado")
             forge.add_argument("action", choices=["plan", "install"])
-            forge.add_argument("tool")
+            forge.add_argument("tool", nargs="+", help="jq, rg e/ou fd; sem URLs arbitrarias")
             forge.add_argument("--directory", help="Pasta privada, padrao ~/.rpa/bin; independente de --root")
             forge.add_argument("--allow-network", action="store_true", help="Obrigatorio para forge install")
             break
@@ -87,12 +89,14 @@ def main(argv=None):
         parser.error("argumentos nao reconhecidos")
     if args.command == "forge":
         # Nao cria workspace nem relatorios: plan e estritamente somente leitura.
-        forwarded = [args.action, args.tool]
+        forwarded = [args.action, *args.tool]
         if args.directory is not None:
             forwarded += ["--directory", args.directory]
         if args.allow_network:
             forwarded.append("--allow-network")
-        return forge_main(forwarded)
+        # Preserve o formato JSON legado para um unico binario bruto (jq).
+        handler = forge_main if len(args.tool) == 1 and args.tool[0] not in ARCHIVE_CATALOG else forge_batch_main
+        return handler(forwarded)
     if args.command != "status":
         return launcher.main(arguments)
     started = time.monotonic()
