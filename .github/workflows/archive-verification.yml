@@ -11,7 +11,7 @@ permissions:
   contents: read
 jobs:
   native-arm64:
-    if: contains(github.event.head_commit.message, [verify-archives-once])
+    if: contains(github.event.head_commit.message, '[verify-archives-once]')
     runs-on: ubuntu-24.04-arm
     timeout-minutes: 10
     steps:
@@ -20,9 +20,9 @@ jobs:
           persist-credentials: false
       - uses: actions/setup-python@v5
         with:
-          python-version: 3.12
+          python-version: "3.12"
       - name: Offline regression tests
-        run: python -m unittest discover -s tests -p test_forge*.py -v
+        run: python -m unittest discover -s tests -p "test_forge*.py" -v
       - name: Explicit real download and native ARM64 execution
         env:
           PYTHONPATH: .
