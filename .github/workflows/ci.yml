@@ -1,0 +1,55 @@
+name: R.P AI validation
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: core-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+jobs:
+  test:
+    name: ${{ matrix.os }} / Python ${{ matrix.python }}
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 10
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-15-intel]
+        python: ["3.10", "3.12"]
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python }}
+      - name: Credential patterns in reachable history
+        run: python scripts/check_secrets.py
+      - name: Compile sources
+        run: python -m compileall -q official_core engine.py rpa.py boot.py autoload.py tests scripts
+      - name: Offline regression suite
+        run: python -m unittest discover -s tests -v
+      - name: Real end-to-end offline test
+        run: python scripts/smoke.py
+      - name: Metrics
+        run: python scripts/metrics.py
+  packaging:
+    name: Install package and rpa command
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install CLI with explicit build dependencies
+        run: python -m pip install --no-deps -e .
+      - name: Verify installed console entrypoint
+        run: rpa --help
+      - name: Prepare local workspace without pip
+        run: rpa --root .core install --no-venv
+      - name: Verify database through installed command
+        run: rpa --root .core run db-check

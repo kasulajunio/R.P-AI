@@ -1,0 +1,42 @@
+name: Approved archive verification
+on:
+  push:
+    branches: [feat/official-foundation]
+    paths:
+      - official_core/forge*.py
+      - tests/test_forge*.py
+      - scripts/verify_archive_download.py
+      - .github/workflows/archive-verification.yml
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  native:
+    if: ${{ github.event_name == 'workflow_dispatch' || contains(github.event.head_commit.message, '[verify-archives-once]') }}
+    name: Native archives / ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 10
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, ubuntu-24.04-arm, windows-latest, macos-15-intel, macos-15]
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+          fetch-depth: 0
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Credential patterns in history
+        run: python scripts/check_secrets.py
+      - name: Compile sources
+        run: python -m compileall -q official_core tests scripts rpa.py
+      - name: Full offline regression tests
+        run: python -m unittest discover -s tests -v
+      - name: Offline smoke test
+        run: python scripts/smoke.py
+      - name: Explicit real CLI downloads and native functional tests
+        env:
+          PYTHONPATH: .
+        run: python scripts/verify_archive_download.py

@@ -1,0 +1,109 @@
+name: Complete authorized verification
+on:
+  push:
+    branches: [feat/official-foundation]
+    paths: [.github/workflows/full-verification.yml, official_core/**, scripts/**, tests/**]
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: full-verification-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  native:
+    name: Full suite / ${{ matrix.os }} / Python ${{ matrix.python }}
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 15
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-15-intel]
+        python: ["3.10", "3.12"]
+        include:
+          - os: ubuntu-24.04-arm
+            python: "3.12"
+          - os: macos-15
+            python: "3.12"
+    env:
+      PYTHONPATH: .
+      PYTHONUTF8: "1"
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python }}
+      - name: Credential scan of reachable history
+        run: python scripts/check_secrets.py
+      - name: Compile all entrypoints and modules
+        run: python -m compileall -q official_core engine.py rpa.py boot.py autoload.py tests scripts
+      - name: Full offline regression including CLI Forge and assistant
+        run: python -m unittest discover -s tests -v
+      - name: Real workspace venv SQLite and hashing
+        run: python scripts/smoke.py
+      - name: Install real package and entrypoints
+        run: python -m pip install --no-deps -e .
+      - name: Verify installed command
+        run: rpa --help
+      - name: Initialize through installed command
+        run: rpa --root .full-verification install --no-venv
+      - name: Verify database through installed command
+        run: rpa --root .full-verification run db-check
+      - name: Authorized native downloads hashes extraction and execution
+        run: python scripts/verify_archive_download.py
+      - name: Project metrics
+        run: python scripts/metrics.py
+  local-ai:
+    name: Downloaded model / CPU inference / real browser
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      OLLAMA_HOST: 127.0.0.1:11434
+      OLLAMA_NO_CLOUD: "1"
+      OLLAMA_NUM_PARALLEL: "1"
+      OLLAMA_MODELS: /tmp/rpa-full-verification-models
+      CUDA_VISIBLE_DEVICES: "-1"
+      ROCR_VISIBLE_DEVICES: "-1"
+      OLLAMA_VULKAN: "0"
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Download official pinned Ollama and check SHA256
+        shell: bash
+        run: |
+          set -euo pipefail
+          curl --fail --location --retry 3 --output "$RUNNER_TEMP/ollama.tar.zst" https://github.com/ollama/ollama/releases/download/v0.40.14/ollama-linux-amd64.tar.zst
+          printf "993e83d08c3d13d17c55009a3e2664c8a25445e644aec3a68bef5abb6abce67d  %s\n" "$RUNNER_TEMP/ollama.tar.zst" | sha256sum --check -
+          mkdir -p "$RUNNER_TEMP/ollama"
+          tar --zstd -xf "$RUNNER_TEMP/ollama.tar.zst" -C "$RUNNER_TEMP/ollama"
+          "$RUNNER_TEMP/ollama/bin/ollama" serve > "$RUNNER_TEMP/ollama.log" 2>&1 &
+          for attempt in $(seq 1 60); do
+            if curl --fail --silent http://127.0.0.1:11434/api/version; then break; fi
+            sleep 1
+          done
+          curl --fail --silent http://127.0.0.1:11434/api/version
+      - name: Explicit authorized model download on test runner
+        run: |
+          "$RUNNER_TEMP/ollama/bin/ollama" pull qwen2.5-coder:0.5b
+      - name: Genuine reply generated HTML and counter browser interaction
+        run: python scripts/ai_smoke.py
+      - name: Verify CPU residency
+        shell: bash
+        run: |
+          "$RUNNER_TEMP/ollama/bin/ollama" ps | tee cpu-evidence.txt
+          grep -q "100% CPU" cpu-evidence.txt
+      - name: Preserve evidence without model files
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: full-local-ai-evidence
+          path: |
+            ai-evidence.json
+            cpu-evidence.txt
+          if-no-files-found: ignore

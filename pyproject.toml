@@ -1,0 +1,20 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "rp-ai-core"
+version = "0.2.0"
+description = "R.P AI: ferramentas locais, CLI e boot offline"
+requires-python = ">=3.10"
+authors = [{name = "Fabio"}]
+license = {file = "LICENSE"}
+dependencies = []
+
+[project.scripts]
+rpa = "official_core.console:main"
+rp-ai = "official_core.cli:main"
+fabio-core = "official_core.cli:main"
+
+[tool.setuptools.packages.find]
+include = ["official_core*"]
