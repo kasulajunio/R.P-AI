@@ -1,0 +1,198 @@
+name: Sandbox completa solicitada por Fabio
+on:
+  push:
+    branches: [test/sandbox-completa-20261103]
+    paths: [.github/workflows/sandbox-completa.yml]
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  native:
+    name: Suite / ${{ matrix.os }} / Python ${{ matrix.python }}
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 18
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-15-intel]
+        python: ["3.10", "3.12"]
+        include:
+          - os: ubuntu-24.04-arm
+            python: "3.12"
+          - os: macos-15
+            python: "3.12"
+    env:
+      PYTHONPATH: .
+      PYTHONUTF8: "1"
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python }}
+      - name: Revisao e compilacao
+        shell: bash
+        run: |
+          git log -1 --format=fuller
+          python -m compileall -q official_core engine.py rpa.py boot.py autoload.py tests scripts
+      - name: Verificar credenciais no historico
+        run: python scripts/check_secrets.py
+      - name: Suite completa CLI e seguranca
+        shell: bash
+        run: |
+          set -o pipefail
+          python -m unittest discover -s tests -v 2>&1 | tee regression.log
+      - name: Smoke real com venv banco e arquivos descartaveis
+        shell: bash
+        run: |
+          set -o pipefail
+          python scripts/smoke.py 2>&1 | tee smoke.log
+      - name: Instalacao real do comando
+        run: python -m pip install --no-deps -e .
+      - run: rpa --help
+      - run: rpa --root .sandbox-data install --no-venv
+      - run: rpa --root .sandbox-data run db-check
+      - name: Downloads autorizados ferramentas nativas
+        shell: bash
+        run: |
+          set -o pipefail
+          python scripts/verify_archive_download.py 2>&1 | tee downloads.log
+      - name: Metricas
+        shell: bash
+        run: python scripts/metrics.py > metrics.json
+      - name: Preservar provas inclusive em falha
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: sandbox-${{ matrix.os }}-${{ matrix.python }}
+          path: |
+            regression.log
+            smoke.log
+            downloads.log
+            metrics.json
+          if-no-files-found: warn
+          retention-days: 7
+  alpine:
+    name: Alpine 3.21 / ${{ matrix.runner }}
+    runs-on: ${{ matrix.runner }}
+    timeout-minutes: 15
+    strategy:
+      fail-fast: false
+      matrix:
+        runner: [ubuntu-latest, ubuntu-24.04-arm]
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - name: Container descartavel sem acesso ao celular
+        shell: bash
+        run: |
+          set -o pipefail
+          docker run -i --rm -v "$PWD:/source:ro" alpine:3.21 sh -es <<\ALPINE 2>&1 | tee alpine.log
+          apk add --no-cache python3 git ripgrep fd bash
+          cp -a /source /tmp/rpa-sandbox
+          cd /tmp/rpa-sandbox
+          export PYTHONPATH=. PYTHONUTF8=1
+          python3 --version
+          uname -m
+          python3 -m compileall -q official_core rpa.py boot.py autoload.py engine.py tests scripts
+          python3 -m unittest discover -s tests -v
+          python3 scripts/smoke.py
+          ANDROID_ROOT=/system python3 rpa.py forge plan rg fd
+          command -v rg fd
+          rg --version
+          fd --version
+          ALPINE
+      - name: Prova Alpine inclusive em falha
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: sandbox-alpine-${{ matrix.runner }}
+          path: alpine.log
+          retention-days: 7
+  ai:
+    name: IA CPU real e apps em Chrome
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    env:
+      OLLAMA_HOST: 127.0.0.1:11434
+      OLLAMA_NO_CLOUD: "1"
+      OLLAMA_NUM_PARALLEL: "1"
+      OLLAMA_MODELS: /tmp/rpa-sandbox-models
+      CUDA_VISIBLE_DEVICES: "-1"
+      ROCR_VISIBLE_DEVICES: "-1"
+      OLLAMA_VULKAN: "0"
+      PYTHONPATH: .
+      PYTHONUTF8: "1"
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Runtime oficial fixo apenas no runner
+        shell: bash
+        run: |
+          set -euo pipefail
+          curl --fail --location --retry 3 --output "$RUNNER_TEMP/ollama.tar.zst" https://github.com/ollama/ollama/releases/download/v0.40.14/ollama-linux-amd64.tar.zst
+          printf "993e83d08c3d13d17c55009a3e2664c8a25445e644aec3a68bef5abb6abce67d  %s\n" "$RUNNER_TEMP/ollama.tar.zst" | sha256sum --check -
+          mkdir -p "$RUNNER_TEMP/ollama"
+          tar --zstd -xf "$RUNNER_TEMP/ollama.tar.zst" -C "$RUNNER_TEMP/ollama"
+          "$RUNNER_TEMP/ollama/bin/ollama" serve > "$RUNNER_TEMP/ollama.log" 2>&1 &
+          for attempt in $(seq 1 60); do
+            if curl --fail --silent http://127.0.0.1:11434/api/version; then break; fi
+            sleep 1
+          done
+          curl --fail --silent http://127.0.0.1:11434/api/version
+      - name: Modelo somente no teste
+        run: |
+          "$RUNNER_TEMP/ollama/bin/ollama" pull qwen2.5-coder:0.5b
+      - name: Inferencia real e miniapps
+        run: python scripts/ai_smoke.py
+      - name: Quatro geracoes independentes e navegador
+        run: python scripts/ai_variants.py
+      - name: Medir residencia CPU
+        if: always()
+        shell: bash
+        run: |
+          "$RUNNER_TEMP/ollama/bin/ollama" ps | tee cpu-evidence.txt
+          grep -q "100% CPU" cpu-evidence.txt
+      - name: Evidencias sem modelos nem dados reais
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: sandbox-ai-evidence
+          path: |
+            ai-evidence.json
+            ai-variants-evidence.json
+            ai-variant-artifacts/
+            cpu-evidence.txt
+          if-no-files-found: warn
+          retention-days: 7
+  endurance:
+    name: Cinco minutos memoria e recuperacao SIGKILL
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    env:
+      PYTHONPATH: .
+      PYTHONUTF8: "1"
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Memoria e tres encerramentos forcados
+        run: python scripts/endurance_probe.py --seconds 300
+      - name: Preservar medicoes
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: sandbox-endurance-evidence
+          path: endurance-evidence.json
+          if-no-files-found: warn
+          retention-days: 7
