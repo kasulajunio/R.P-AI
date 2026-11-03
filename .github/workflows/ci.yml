@@ -1,0 +1,29 @@
+name: Core validation
+on: [push, pull_request, workflow_dispatch]
+permissions:
+  contents: read
+jobs:
+  test:
+    name: ${{ matrix.os }} / Python ${{ matrix.python }}
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 10
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+        python: ["3.10", "3.12"]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python }}
+      - name: Compile sources
+        run: python -m compileall -q official_core engine.py tests
+      - name: Offline regression suite
+        run: python -m unittest discover -s tests -v
+      - name: Real virtual environment smoke test
+        run: python engine.py --root .core-ci prepare ai --venv
+      - name: CLI smoke test
+        run: python -m official_core --root .core-ci note-add CI --body offline
+      - name: Metrics
+        run: python scripts/metrics.py
