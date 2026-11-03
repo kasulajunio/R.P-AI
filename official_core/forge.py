@@ -24,6 +24,8 @@ NAME = re.compile(r"[a-z][a-z0-9_-]{0,63}\Z")
 
 
 def check_url(url, initial=False):
+    if not isinstance(url, str) or any(ord(char) <= 32 or ord(char) == 127 for char in url):
+        raise ValueError("URL deve ser texto sem controles ou espacos")
     value = urlsplit(url)
     if (value.scheme != "https" or value.hostname not in HOSTS or value.username or value.password or value.port not in (None, 443) or value.fragment):
         raise ValueError("Download bloqueado: HTTPS e dominio aprovado sao obrigatorios")
