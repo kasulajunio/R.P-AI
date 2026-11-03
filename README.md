@@ -1,106 +1,80 @@
 # R.P AI
 
-![Python 3.10+](https://img.shields.io/badge/Python-3.10%2B-blue) ![License MIT](https://img.shields.io/badge/License-MIT-green) ![Version 0.2.0](https://img.shields.io/badge/Version-0.2.0-orange)
-[![CI](https://github.com/kasulajunio/R.P-AI/actions/workflows/ci.yml/badge.svg?branch=feat%2Fofficial-foundation)](https://github.com/kasulajunio/R.P-AI/actions)
+**Ferramentas locais em Python, com CLI, dados persistentes e diagnostico.**
 
-Ferramentas locais de Fabio: notas e tarefas em SQLite, busca, edicao, exportacao, backup verificavel, hash e preparacao de ambientes. Python 3.10+, sem dependencias obrigatorias alem da biblioteca padrao. **Licenca MIT**, conforme pedido do titular.
+![Python 3.10+](https://img.shields.io/badge/python-3.10%2B-blue) ![MIT](https://img.shields.io/badge/license-MIT-green) ![Version 0.2.0](https://img.shields.io/badge/version-0.2.0-blue)
 
-Versao 0.2.0 em validacao. Nao e produto completo de IA nem certificacao empresarial: inferencia com modelo, cofre criptografado, motor de jogos e tuneis ainda nao existem. [O que funciona](docs/COMMANDS.md) · [Riscos](docs/RISKS.md).
+> Uso livre sob MIT, inclusive comercial, preservando copyright e licenca. Software experimental, sem garantias adicionais, nos limites da lei. Venv nao e sandbox de seguranca. [LICENSE](LICENSE) · [Termos](TERMS.md).
 
-## Acesso e download
+## Escopo real
 
-O titular solicitou tornar o projeto publico. Nesta revisao o acesso permanece privado enquanto a exposicao do e-mail pessoal no historico e avaliada. A licenca MIT foi alterada independentemente da visibilidade. Depois da abertura, clone HTTPS e Download ZIP dispensam conta. Nunca use token publicado em comando ou issue.
+Notas SQLite, tarefas locais, busca, edicao, exportacao JSON, backup SQLite verificado, SHA-256, boot nao interativo e CLI de operacoes. Sem dependencias obrigatorias de terceiros. Ainda **nao ha inferencia/chat com modelo, cofre criptografado, motor de jogos ou tuneis**. Pastas preparadas nao equivalem a esses produtos.
+
+Repositorio: https://github.com/kasulajunio/R.P-AI. Publicacao solicitada, ainda sujeita a revisao de privacidade do historico e confirmacao de visibilidade. Clone e ZIP exigem permissao enquanto privado. Nenhum badge acima afirma testes aprovados.
 
 ## Inicio rapido
 
-Com Python 3.10+ e Git, em Linux/macOS/Termux use python3 ou python; no Windows use py -3.
+Requer Python 3.10+ e Git previamente instalados. No Android, use Termux; Windows, PowerShell; Linux/macOS, Terminal.
 
 ```sh
 git clone https://github.com/kasulajunio/R.P-AI.git
 cd R.P-AI
 python rpa.py install
-python rpa.py run note-add "Primeira nota" --body "Texto local"
+python rpa.py run note-add "Minha nota" --body "Texto local"
 python rpa.py run note-list
+python rpa.py status
+```
+
+Windows: use py -3 em lugar de python. Linux/macOS: use python3 se necessario. Termux: instale explicitamente Python e Git com pkg install python git; essa etapa usa internet. O boot nao executa apt-get/pkg, nao usa sudo e nao modifica pacotes globais.
+
+[Instrucoes completas por sistema e ZIP](docs/TERMINALS.md) · [CLI detalhada](docs/PRODUCT_CLI.md). Android/Termux nao foi testado em aparelho real.
+
+## Comandos de produto
+
+| Comando | Acao implementada |
+| --- | --- |
+| install | Prepara estrutura, SQLite e venv; executa o Python do venv para verificar |
+| run | Executa notas, tarefas, exportacao, backups, hash e diagnostico |
+| update | Git pull fast-forward na main limpa do origin oficial, sem reinstalar dependencias |
+| status | Versao, Python, sistema, commit, saude SQLite, existencia do venv e ultimo log |
+| autoload | Gera template opt-in; nao registra nem ativa servicos automaticamente |
+
+```sh
+python rpa.py install --no-venv
 python rpa.py run task-add "Revisar projeto"
 python rpa.py run task-list
 python rpa.py run db-check
-```
-
-O install detecta o sistema, cria o workspace .core, abre o banco e cria/verifica um venv **sem pip**, downloads, pacotes ML ou alteracoes no sistema. Falha retorna codigo diferente de zero e nao anuncia sucesso. O nucleo pode funcionar sem venv: `python rpa.py install --no-venv`. Nao execute como administrador/root.
-
-## Comando unico rpa
-
-Opcional: instale a CLI em um venv de desenvolvimento separado. A criacao com pip e a instalacao do pacote podem usar internet para obter ferramentas de build; nao fazem parte do boot offline.
-
-```sh
-python -m venv .venv
-.venv/bin/python -m pip install -e .
-.venv/bin/rpa install
-.venv/bin/rpa run note-list
-.venv/bin/rpa update
-```
-
-No Windows use `.venv\Scripts\python.exe -m pip install -e .` e `.venv\Scripts\rpa.exe`. Com o venv no PATH, use apenas **rpa install**, **rpa run**, **rpa update**. Alternativa sem pip: `python rpa.py`. Nenhum pacote foi publicado no PyPI.
-
-Update usa rede e faz somente fast-forward em main limpa, com origin oficial. Recusa alteracoes locais, outras branches e repositorios; nao resolve conflitos, executa reset, reinstala dependencias ou apaga dados. ZIP nao usa update. Reveja changelog antes de atualizar.
-
-## Terminais por sistema
-
-- **Android:** Termux, obtido conforme [fontes oficiais](https://github.com/termux/termux-app#installation). Execute `pkg update`, `pkg install python git` e os comandos de clone acima. Esses dois primeiros comandos usam internet. Termux real ainda nao foi validado.
-- **Windows:** PowerShell/Windows Terminal com [Python](https://www.python.org/downloads/) e [Git](https://git-scm.com/downloads/). Substitua python por `py -3`. Nao precisa alterar ExecutionPolicy para executar arquivos Python.
-- **Linux/macOS:** Terminal com Python 3.10+ e Git. Prefira `python3`. Instale ferramentas do sistema de forma explicita conforme sua distribuicao; o boot nao chama apt/brew.
-
-[Guia completo de instalacao, ZIP e atualizacao](docs/TERMINALS.md).
-
-## Notas, tarefas e backup
-
-```sh
-python rpa.py run note-search "Texto"
-python rpa.py run note-get 1
-python rpa.py run note-update 1 --title "Revisada"
-python rpa.py run note-export notas.json
-python rpa.py run task-done 1
-python rpa.py run task-done 1 --reopen
 python rpa.py run db-backup backup-01.sqlite3
-python rpa.py run sha256 README.md
+python rpa.py run note-export notas-01.json
+python rpa.py update
+python rpa.py --version
+python rpa.py --help
 ```
 
-IDs sao exemplos. Exportacoes e backups ficam dentro do workspace, sem sobrescrita. Notas, tarefas, logs e backups **nao sao criptografados**. Tarefas nao enviam notificacoes. Exclusao exige --confirm. [Referencia completa](docs/COMMANDS.md).
+O workspace padrao do rpa e .core na pasta atual. Para compartilhar dados entre rpa, boot.py e engine.py, use --root .core antes do comando. A CLI legada engine.py tem outro padrao por compatibilidade. Instalar o pacote registra o comando literal rpa: [guia](docs/PRODUCT_CLI.md). Nao existe publicacao no PyPI anunciada.
 
-## Logs e relatorios
+## Seguranca e limites
 
-Cada operacao da CLI rpa gera .core/logs/ID.json com comando, resultado, duracao, UTC e tipo de falha. Nao registra corpo de notas, argumentos, credenciais ou saida bruta de Git. Relatorios nao saem do dispositivo. Permissoes POSIX restritas quando disponiveis; no Windows dependem das ACLs locais. Sem rotacao automatica nesta versao, revise arquivos antigos manualmente.
+- Update e uma operacao de rede explicita. Recusa alteracoes locais, branch diferente de main, ZIP e origin nao oficial; nao faz reset nem apaga dados para atualizar.
+- O boot usa biblioteca padrao, sem baixar modelos, ML ou pacotes do sistema. Se venv faltar, use --no-venv para as ferramentas locais.
+- Logs JSON ficam em .core/logs; registram resultado, tempo e tipo de erro, nao argumentos ou texto das notas. A ajuda e erros de sintaxe nao geram log operacional.
+- Status consulta SQLite em modo somente leitura. Ainda gera seu proprio log. Um banco corrompido retorna falha, nao sucesso.
+- Banco, notas, exportacoes e backups nao sao criptografados. Nao publique workspace, tokens, modelos restritos ou dados pessoais.
+- Venv separa dependencias, mas nao isola codigo hostil nem garante seguranca do sistema.
+- run nao chama main.py ficticio nem anuncia IA em execucao. Nao ha modelo instalado, inferencia, servico permanente ou atualizacao automatica por padrao.
 
-## Boot e autoload opcionais
-
-```sh
-python boot.py
-python rpa.py autoload --platform termux
-python rpa.py autoload --platform linux
-```
-
-Autoload gera template **sem ativa-lo**. Inicializacao padrao faz preparacao local e verifica SQLite; nao mantem processo em loop. Para autorizar Git/rede a cada startup, gere com --auto-update. Nao e atualizacao em tempo real. Linux/systemd, Termux:Boot e Windows/PowerShell possuem instrucoes em [AUTOLOAD.md](docs/AUTOLOAD.md); macOS ainda nao tem template. Nada e ativado automaticamente no celular do titular.
-
-## Arquitetura e limites
-
-`official_core/engine.py`: caminhos e estrutura; `services.py`: SQLite/servicos; `bootstrap.py`: ambiente offline; `launcher.py`: comandos rpa e relatorios; `cli.py`: ferramentas de dados; `autoload.py`: startup opt-in. Pastas modulares sao pontos de expansao. Venv nao e sandbox. Detectar nvidia-smi nao valida CUDA. Crypto_Vault nao e cofre. Nenhum modelo e baixado.
-
-Nomes anteriores official_core, MasterEngine, Fabio_Official_Core, rp-ai e fabio-core foram preservados por compatibilidade. .core e o workspace padrao da nova CLI rpa; a CLI antiga continua usando Fabio_Official_Core. Use --root antes do comando para selecionar o mesmo workspace.
-
-## Qualidade
+## Testes e qualidade
 
 ```sh
-python -m compileall -q official_core engine.py rpa.py boot.py autoload.py tests scripts
+python -m compileall -q official_core rpa.py autoload.py boot.py engine.py tests scripts
 python -m unittest discover -s tests -v
 python scripts/smoke.py
 python scripts/metrics.py
 python scripts/check_secrets.py
 ```
 
-CI em Linux, Windows e macOS Intel com Python 3.10/3.12. Consulte checks do commit atual: um badge verde anterior nao prova a revisao seguinte. Android/GPU e ativacao real de startup ainda nao validados. O checker examina padroes conhecidos no historico, nao e auditoria nem detector completo de dados pessoais.
+A matriz CI configura Linux/Windows/macOS Intel e Python 3.10/3.12. Confira os checks da revisao exata no PR antes de tratar como aprovado. A triagem de padroes no historico nao substitui auditoria. Nao ha validacao em Android ou GPU real.
 
-## Documentacao e contribuicao
+## Documentacao
 
-[Changelog](CHANGELOG.md) · [Guia](docs/USAGE.md) · [Comandos](docs/COMMANDS.md) · [Autoload](docs/AUTOLOAD.md) · [Arquitetura](docs/ARCHITECTURE.md) · [IA](docs/AI_LOCAL.md) · [Status](docs/STATUS.md) · [Seguranca](SECURITY.md) · [Contribuir](CONTRIBUTING.md) · [Termos](TERMS.md) · [MIT](LICENSE).
-
-Contribuicoes por PR com testes, limites claros e sem dados privados. Codigo e documentacao sob MIT; bibliotecas/modelos de terceiros conservam licencas proprias. Sem garantia nos limites da lei. Aviso no boot nao e aceite juridico automatico.
+[CLI](docs/PRODUCT_CLI.md) · [Terminais](docs/TERMINALS.md) · [Comandos locais](docs/COMMANDS.md) · [Arquitetura](docs/ARCHITECTURE.md) · [IA local](docs/AI_LOCAL.md) · [Riscos](docs/RISKS.md) · [Changelog](CHANGELOG.md) · [Seguranca](SECURITY.md).

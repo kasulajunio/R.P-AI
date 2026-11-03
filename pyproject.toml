@@ -5,20 +5,14 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "rp-ai-core"
 version = "0.2.0"
-description = "R.P AI: ferramentas locais, bootstrap seguro e CLI modular de Fabio"
-readme = "README.md"
+description = "R.P AI: ferramentas locais, CLI e boot offline"
 requires-python = ">=3.10"
-license = {file = "LICENSE"}
 authors = [{name = "Fabio"}]
+license = {file = "LICENSE"}
 dependencies = []
-classifiers = ["Programming Language :: Python :: 3", "Operating System :: OS Independent", "License :: OSI Approved :: MIT License"]
-
-[project.urls]
-Repository = "https://github.com/kasulajunio/R.P-AI"
-Issues = "https://github.com/kasulajunio/R.P-AI/issues"
 
 [project.scripts]
-rpa = "official_core.launcher:main"
+rpa = "official_core.console:main"
 rp-ai = "official_core.cli:main"
 fabio-core = "official_core.cli:main"
 
