@@ -11,6 +11,8 @@ import sqlite3
 import subprocess
 import sys
 import tempfile
+import threading
+import weakref
 import venv
 from pathlib import Path
 
@@ -27,6 +29,22 @@ RESERVED = {"CON", "PRN", "AUX", "NUL"} | {f"COM{x}" for x in range(1, 10)} | {f
 
 class SafetyError(ValueError):
     """Uma operacao de sistema de arquivos foi recusada."""
+
+
+_DATABASE_LOCKS = weakref.WeakValueDictionary()
+_DATABASE_LOCKS_GUARD = threading.Lock()
+
+
+class _SerializedConnection(sqlite3.Connection):
+    """Keep the per-file local queue until the operation closes."""
+    def close(self):
+        lock = getattr(self, "_operation_lock", None)
+        try:
+            super().close()
+        finally:
+            if lock is not None:
+                self._operation_lock = None
+                lock.release()
 
 
 class MasterEngine:
@@ -153,11 +171,30 @@ class MasterEngine:
             raise SafetyError("Banco existente nao e arquivo regular")
         # Cria o arquivo com permissoes restritas em POSIX antes de conectar.
         self._write_new("Database_Nexus/notes.sqlite3", "")
-        connection = sqlite3.connect(str(path), timeout=5)
-        connection.execute("PRAGMA foreign_keys=ON")
-        connection.execute("CREATE TABLE IF NOT EXISTS notes (id INTEGER PRIMARY KEY, title TEXT NOT NULL, body TEXT NOT NULL, created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP)")
-        connection.commit()
-        return connection
+        # Queue same-process operations: SQLite has one writer, and the
+        # five-second busy timeout starved competing Windows threads.
+        key = os.path.normcase(str(path.absolute()))
+        with _DATABASE_LOCKS_GUARD:
+            lock = _DATABASE_LOCKS.get(key)
+            if lock is None:
+                lock = threading.RLock()
+                _DATABASE_LOCKS[key] = lock
+        if not lock.acquire(timeout=30):
+            raise sqlite3.OperationalError("database local queue timed out")
+        connection = None
+        try:
+            connection = sqlite3.connect(str(path), timeout=30, factory=_SerializedConnection)
+            connection._operation_lock = lock
+            connection.execute("PRAGMA foreign_keys=ON")
+            connection.execute("CREATE TABLE IF NOT EXISTS notes (id INTEGER PRIMARY KEY, title TEXT NOT NULL, body TEXT NOT NULL, created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP)")
+            connection.commit()
+            return connection
+        except BaseException:
+            if connection is not None:
+                connection.close()
+            else:
+                lock.release()
+            raise
 
     def add_note(self, title, body=""):
         if not isinstance(title, str) or not title.strip() or len(title) > 200:
