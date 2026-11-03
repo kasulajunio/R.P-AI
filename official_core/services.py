@@ -6,8 +6,8 @@ from contextlib import contextmanager
 
 
 def positive_id(value):
-    if type(value) is not int or value < 1:
-        raise ValueError("ID deve ser inteiro positivo")
+    if type(value) is not int or not 1 <= value <= 2**63 - 1:
+        raise ValueError("ID deve ser inteiro positivo de 64 bits")
     return value
 
 
