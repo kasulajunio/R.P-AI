@@ -1,5 +1,5 @@
 # SPDX-License-Identifier: MIT
-"""Entrada de produto: comandos reais, status somente leitura e versao coerente."""
+"""Entrada real de produto; nenhum modelo e iniciado pelo status."""
 import json
 import os
 import platform
@@ -14,6 +14,7 @@ from .engine import MasterEngine
 from .forge import main as forge_main
 from .forge_command import main as forge_batch_main
 from .forge_archives import CATALOG as ARCHIVE_CATALOG
+from .assistant_cli import add_parsers as add_assistant_parsers, run as run_assistant
 
 VERSION = "0.2.0"
 
@@ -27,7 +28,6 @@ def status(root, source):
             raise ValueError("Banco existente nao e arquivo regular")
         connection = None
         try:
-            # URI somente leitura; nao cria banco, tabelas nem dados de exemplo.
             connection = sqlite3.connect(database.as_uri() + "?mode=ro", uri=True, timeout=5)
             connection.execute("PRAGMA query_only=ON")
             checks = [row[0] for row in connection.execute("PRAGMA quick_check")]
@@ -56,15 +56,16 @@ def status(root, source):
                 commit = launcher._git(repository, "rev-parse", "--short", "HEAD")
         except (OSError, subprocess.SubprocessError):
             pass
-    return {"version": VERSION, "system": detect_system(), "python": platform.python_version(), "workspace": str(engine.base_dir), "configured": engine.path("core.json").is_file(), "database": health, "venv_python_exists": interpreter.is_file(), "venv_integrity": "not_checked_by_status", "commit": commit, "latest_previous_report": str(latest) if latest else None, "available_commands": ["notes", "tasks", "export", "backup", "sha256", "doctor"], "inference_implemented": False, "model_installed_by_rpa": False, "background_service_started": False, "warning": "Venv nao e sandbox. Presenca de arquivo nao comprova integridade. Nenhum modelo foi executado"}
+    return {"version": VERSION, "system": detect_system(), "python": platform.python_version(), "workspace": str(engine.base_dir), "configured": engine.path("core.json").is_file(), "database": health, "venv_python_exists": interpreter.is_file(), "venv_integrity": "not_checked_by_status", "commit": commit, "latest_previous_report": str(latest) if latest else None, "available_commands": ["notes", "tasks", "export", "backup", "sha256", "doctor", "chat", "app"], "inference_implemented": True, "inference_backend": "ollama_loopback", "model_availability": "not_checked", "model_installed_by_rpa": False, "background_service_started": False, "warning": "Venv nao e sandbox. Status nao verifica nem executa modelo. Chat requer Ollama e modelo instalados explicitamente"}
 
 
 def build_parser():
     parser = launcher.build_parser()
-    parser.description = "R.P AI: install, run, update, status, forge e autoload explicitos"
+    parser.description = "R.P AI: install, run, update, status, forge, chat, app e autoload explicitos"
     parser.add_argument("--version", action="version", version="R.P AI " + VERSION)
     for action in parser._actions:
         if hasattr(action, "add_parser"):
+            add_assistant_parsers(action)
             action.add_parser("status", help="Diagnostico local sem rede ou execucao de modelo")
             forge = action.add_parser("forge", help="Plano offline ou download do catalogo aprovado")
             forge.add_argument("action", choices=["plan", "install"])
@@ -80,24 +81,22 @@ def main(argv=None):
     parser = build_parser()
     args, unknown = parser.parse_known_args(arguments)
     if args.command == "run":
-        # REMAINDER pode deixar uma opcao inicial em unknown. Rejeite ambos.
         nested = (args.arguments or []) + unknown
         if "--root" in nested or any(value.startswith("--root=") for value in nested):
             print("Defina --root antes de run, nao dentro do comando", file=sys.stderr)
             return 1
     if unknown:
         parser.error("argumentos nao reconhecidos")
+    if args.command in {"chat", "app"}:
+        return run_assistant(args)
     if args.command == "forge":
-        # Repositorios e URLs nao sao nomes; rejeite antes de delegar.
         if any("/" in tool or "\\" in tool or ":" in tool for tool in args.tool):
             parser.error("Use somente nomes do catalogo, nunca repositorios ou URLs")
-        # Nao cria workspace nem relatorios: plan e estritamente somente leitura.
         forwarded = [args.action, *args.tool]
         if args.directory is not None:
             forwarded += ["--directory", args.directory]
         if args.allow_network:
             forwarded.append("--allow-network")
-        # Preserve o formato JSON legado para um unico binario bruto (jq).
         handler = forge_main if len(args.tool) == 1 and args.tool[0] not in ARCHIVE_CATALOG else forge_batch_main
         return handler(forwarded)
     if args.command != "status":

@@ -19,7 +19,9 @@ class ConsoleTests(unittest.TestCase):
         result = status(self.root, self.base)
         self.assertEqual(result["database"]["state"], "not_initialized")
         self.assertFalse(self.root.exists())
-        self.assertFalse(result["inference_implemented"])
+        self.assertTrue(result["inference_implemented"])
+        self.assertEqual(result["model_availability"], "not_checked")
+        self.assertFalse(result["model_installed_by_rpa"])
         self.assertFalse(result["background_service_started"])
 
     def test_status_after_install(self):
