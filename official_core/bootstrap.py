@@ -7,7 +7,6 @@ import argparse
 import json
 import os
 from pathlib import Path
-import platform
 import sqlite3
 import subprocess
 import sys
@@ -20,7 +19,10 @@ NOTICE = "R.P AI | MIT | Copyright 2026 Fabio. Uso pessoal e comercial permitido
 
 
 def detect_system(system=None, environ=None):
-    name = (platform.system() if system is None else system).lower()
+    # platform.system() may launch cmd.exe on Windows/Python 3.10.
+    # Read the interpreter platform directly; detection must not spawn anything.
+    native = {"win32": "windows", "darwin": "darwin", "linux": "linux", "android": "android"}
+    name = (native.get(sys.platform, sys.platform) if system is None else system).lower()
     environment = os.environ if environ is None else environ
     if environment.get("TERMUX_VERSION") or "com.termux" in environment.get("PREFIX", ""):
         return "termux"

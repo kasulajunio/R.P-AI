@@ -2,7 +2,7 @@ name: Complete authorized verification
 on:
   push:
     branches: [feat/official-foundation]
-    paths: [.github/workflows/full-verification.yml, tests/test_adversarial.py]
+    paths: [.github/workflows/full-verification.yml, official_core/**, scripts/**, tests/**]
   workflow_dispatch:
 permissions:
   contents: read
