@@ -28,8 +28,7 @@ class BootstrapTests(unittest.TestCase):
         self.assertEqual(detect_system("Linux", {"ANDROID_ROOT": "/system"}), "android")
 
     def test_unknown_is_not_android(self):
-        with self.assertRaises(RuntimeError):
-            detect_system("UnknownOS", {})
+        self.assertEqual(detect_system("UnknownOS", {}), "unsupported")
 
     def test_no_environment_dump(self):
         self.assertEqual(detect_system("Linux", {"UNRELATED_SECRET": "com.termux"}), "linux")
