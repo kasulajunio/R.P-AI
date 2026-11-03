@@ -3,14 +3,15 @@ requires = ["setuptools>=68"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "fabio-official-core"
+name = "rp-ai-core"
 version = "0.1.0"
-description = "Fundacao modular privada de Fabio"
+description = "R.P AI: fundacao modular privada de Fabio"
 requires-python = ">=3.10"
 authors = [{name = "Fabio"}]
 dependencies = []
 
 [project.scripts]
+rp-ai = "official_core.cli:main"
 fabio-core = "official_core.cli:main"
 
 [tool.setuptools.packages.find]

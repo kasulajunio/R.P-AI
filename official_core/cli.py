@@ -1,4 +1,4 @@
-"""Interface sem instalacoes ou conexoes implicitas."""
+"""Interface R.P AI sem instalacoes ou conexoes implicitas."""
 import argparse
 import json
 import sqlite3
@@ -11,7 +11,7 @@ def output(value):
 
 
 def main(argv=None):
-    parser = argparse.ArgumentParser(description="Fabio Official Core: fundacao modular privada")
+    parser = argparse.ArgumentParser(description="R.P AI: fundacao modular privada de Fabio")
     parser.add_argument("--root", help="Workspace dedicado; padrao ./Fabio_Official_Core")
     commands = parser.add_subparsers(dest="command")
     commands.add_parser("init", help="Cria estrutura sem downloads")
@@ -56,7 +56,7 @@ def main(argv=None):
 
 def menu():
     engine = MasterEngine()
-    print("Fabio Official Core | repositorio privado | sem downloads automaticos")
+    print("R.P AI | repositorio privado de Fabio | sem downloads automaticos")
     print("Crypto_Vault nao e cofre criptografado. Venv nao e sandbox.")
     while True:
         for key, value in engine.modules.items():
@@ -66,7 +66,6 @@ def menu():
             choice = input("Escolha: ").strip()
             if choice == "0":
                 return 0
-            # O menu cria somente a base. --venv exige comando explicito.
             output(engine.install_module(choice))
         except (EOFError, KeyboardInterrupt):
             print("\nEncerrado.")
