@@ -11,6 +11,7 @@ import time
 from . import launcher
 from .bootstrap import detect_system
 from .engine import MasterEngine
+from .forge import main as forge_main
 
 VERSION = "0.2.0"
 
@@ -58,24 +59,40 @@ def status(root, source):
 
 def build_parser():
     parser = launcher.build_parser()
-    parser.description = "R.P AI: install, run, update, status e autoload explicitos"
+    parser.description = "R.P AI: install, run, update, status, forge e autoload explicitos"
     parser.add_argument("--version", action="version", version="R.P AI " + VERSION)
     for action in parser._actions:
         if hasattr(action, "add_parser"):
             action.add_parser("status", help="Diagnostico local sem rede ou execucao de modelo")
+            forge = action.add_parser("forge", help="Plano offline ou download do catalogo aprovado")
+            forge.add_argument("action", choices=["plan", "install"])
+            forge.add_argument("tool")
+            forge.add_argument("--directory", help="Pasta privada, padrao ~/.rpa/bin; independente de --root")
+            forge.add_argument("--allow-network", action="store_true", help="Obrigatorio para forge install")
             break
     return parser
 
 
 def main(argv=None):
     arguments = list(sys.argv[1:] if argv is None else argv)
-    args = build_parser().parse_args(arguments)
+    parser = build_parser()
+    args, unknown = parser.parse_known_args(arguments)
     if args.command == "run":
-        # Um comando nao deve escapar do workspace configurado nem separar os logs.
-        nested = args.arguments or []
+        # REMAINDER pode deixar uma opcao inicial em unknown. Rejeite ambos.
+        nested = (args.arguments or []) + unknown
         if "--root" in nested or any(value.startswith("--root=") for value in nested):
             print("Defina --root antes de run, nao dentro do comando", file=sys.stderr)
             return 1
+    if unknown:
+        parser.error("argumentos nao reconhecidos")
+    if args.command == "forge":
+        # Nao cria workspace nem relatorios: plan e estritamente somente leitura.
+        forwarded = [args.action, args.tool]
+        if args.directory is not None:
+            forwarded += ["--directory", args.directory]
+        if args.allow_network:
+            forwarded.append("--allow-network")
+        return forge_main(forwarded)
     if args.command != "status":
         return launcher.main(arguments)
     started = time.monotonic()
