@@ -1,13 +1,11 @@
-# R.P AI: uso livre, riscos e responsabilidade
+# Termos e limites de uso
 
-Por solicitacao explicita do titular, o codigo original passa a ser disponibilizado sob a licenca MIT em LICENSE: uso pessoal e comercial, copia, modificacao e redistribuicao sao permitidos, preservando copyright e licenca. Nao ha cobranca do titular por esta copia. Isso nao proibe terceiros de comercializar copias sob MIT. Modelos, dependencias, marcas e componentes de terceiros possuem licencas proprias.
+O titular Fabio solicitou expressamente a licenca MIT nesta revisao. A [LICENSE](LICENSE) contem o texto juridico da licenca, inclusive permissao de uso, modificacao, redistribuicao e uso comercial com preservacao do aviso exigido. Restricoes proprietarias de revisoes anteriores nao se aplicam como condicoes adicionais a esta revisao MIT.
 
-Este arquivo e um aviso explicativo, nao uma restricao adicional a MIT nem uma declaracao de que o programa obteve consentimento contratual. Mostrar uma mensagem ou rodar sem perguntas nao demonstra, por si, aceite juridico. Nenhum termo afasta direitos irrenunciaveis ou responsabilidades que nao possam ser excluidas pela lei aplicavel.
+Este software e fornecido sem garantia, nos limites da lei aplicavel. Nenhuma frase transfere automaticamente toda responsabilidade ao usuario nem elimina obrigacoes legais que nao possam ser afastadas. Isto nao e aconselhamento juridico. Marcas e identidade nao sao cedidas pela licenca de codigo.
 
-O operador deve respeitar a lei e autorizacoes sobre equipamentos, redes e dados, manter backups e conferir resultados. O software e experimental e pode apresentar falhas, incompatibilidade, perda de dados e consumo de disco, memoria e bateria. E fornecido no estado em que se encontra, sem garantias adicionais, nos limites legais.
+O boot exibe um aviso; executar nao e descrito como aceite juridico automatico. Leia o codigo e a documentacao antes de executar. Venv nao e sandbox de seguranca. Nao armazene segredos no banco, logs ou na pasta Crypto_Vault, que nao e cofre criptografado.
 
-O boot cria arquivos num workspace dedicado, banco SQLite e, por padrao, ambiente virtual. Nao usa sudo, nao instala pacotes globais, nao abre tuneis e nao baixa modelos ou bibliotecas de IA. Venv nao e sandbox. Banco, notas, exportacoes e backups nao sao criptografados. Crypto_Vault nao e um cofre pronto.
+Instalacao do nucleo e local e offline, sem gerenciadores de pacotes do sistema. Atualizacao e uma operacao explicita que usa Git e rede. Autoload apenas gera template por padrao; ativacao no dispositivo e opcional. A opcao --auto-update autoriza atualizacao por rede em cada execucao desse template, sem prometer disponibilidade, compatibilidade futura ou atualizacao em tempo real.
 
-Python e Git precisam existir antes da execucao. Em sistemas sem o suporte venv/ensurepip, o boot falha claramente; --without-venv permite usar notas e tarefas sem ML. Nenhuma falha e apresentada como sucesso. O primeiro download de um modelo exigira internet ou transferencia de uma copia existente e deve respeitar a respectiva licenca. Esta versao ainda nao executa inferencia.
-
-O nucleo nao implementa telemetria. GitHub e ambientes de CI seguem suas proprias politicas. Nao publique workspace, chaves, senhas, tokens, modelos restritos ou dados pessoais. Publicar um repositorio revela tambem historico e metadados dos commits; a revisao de privacidade precede a mudanca de visibilidade.
+Dependencias opcionais, modelos e conteudo de terceiros possuem licencas proprias e nao sao baixados automaticamente pelo nucleo. Nao alegamos seguranca certificada, inferencia de IA, cofre, jogos completos ou tuneis implementados.

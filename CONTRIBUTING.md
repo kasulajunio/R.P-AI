@@ -1,7 +1,9 @@
-# Contribuir com R.P AI
+# Contribuir com a R.P AI
 
-O codigo original esta sob MIT por autorizacao do titular. Preserve autoria e licenca; contribua somente com material que voce pode licenciar de forma compativel. Modelos e dependencias de terceiros continuam sujeitos as proprias licencas. Enquanto o repositorio estiver privado, acesso tecnico ainda exige autorizacao.
+Codigo desta revisao sob MIT: consulte LICENSE. Preserve avisos de autoria. Proponha mudancas por issue e pull request, descrevendo objetivo, compatibilidade e riscos. Nao ha transferencia automatica de autoria de contribuicoes.
 
-Crie branch curta, explique objetivo, efeitos e riscos, inclua testes e abra PR. Use Python 3.10+ e biblioteca padrao no nucleo. Evite dependencias pesadas obrigatorias. Nao inclua segredos, dados reais, bancos, modelos ou executaveis.
+Use Python 3.10+ e biblioteca padrao para o nucleo. Crie branch curta, adicione testes e atualize changelog e documentacao. Use dados sinteticos. Nunca inclua tokens, bancos pessoais, executaveis ou modelos.
 
-Checklist: compilacao, testes offline, CI verde para o commit exato, preservacao de dados, nenhuma rede implicita, sem shell=True, entrada validada, documentacao em portugues e limites claros. Nao aceitar recurso apenas porque existe uma pasta com nome convincente.
+Checklist: regressao offline, compilacao, smoke, checker de padroes de credenciais e seis jobs multiplataforma no commit atual; sem rede implicita, shell inseguro, sobrescrita de dados ou promessas alem do codigo. O checker nao substitui revisao de seguranca.
+
+Inicializacao no boot permanece opt-in; nao crie servicos durante testes e nao execute templates no dispositivo de terceiros. Instalacao e atualizacao sao acoes diferentes.
