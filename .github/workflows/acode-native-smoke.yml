@@ -1,0 +1,29 @@
+name: Acode Alpine ARM native recovery
+on:
+  push:
+    branches: [test/alpine-install-smoke]
+    paths:
+      - .github/workflows/acode-native-smoke.yml
+      - scripts/acode-native-recovery.sh
+permissions:
+  contents: read
+jobs:
+  native-recovery:
+    runs-on: ubuntu-24.04-arm
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/checkout@v4
+        with:
+          ref: 8c378b7691979ca151c5a5aea0ed7ae010ba57ff
+          path: subject
+          persist-credentials: false
+      - name: Reproduce inherited Android environment and native recovery
+        run: |
+          docker run --rm -e ANDROID_ROOT=/system -v "$GITHUB_WORKSPACE/subject:/source:ro" -v "$GITHUB_WORKSPACE/scripts/acode-native-recovery.sh:/check.sh:ro" alpine:3.21 sh /check.sh
+      - name: Record exact scope
+        if: always()
+        run: |
+          echo "Original 8c378b7, ARM runner, Alpine 3.21, synthetic ANDROID_ROOT. No access to user phone, Acode app or Termux. Native packages installed only in disposable container." >> "$GITHUB_STEP_SUMMARY"
