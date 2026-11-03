@@ -72,6 +72,10 @@ class MasterEngine:
         target = self.path(relative)
         target.parent.mkdir(parents=True, exist_ok=True, mode=0o700)
         self._check_chain(target)
+        # Windows pode responder PermissionError, nao FileExistsError, para diretorios.
+        # Recuse o tipo antes de abrir; a criacao continua exclusiva contra sobrescrita.
+        if target.exists() and not target.is_file():
+            raise SafetyError("O destino existente nao e arquivo regular")
         flags = os.O_WRONLY | os.O_CREAT | os.O_EXCL | getattr(os, "O_NOFOLLOW", 0)
         try:
             descriptor = os.open(target, flags, 0o600)
