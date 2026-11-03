@@ -21,7 +21,7 @@ class ForgeBatchTests(unittest.TestCase):
 
     def test_real_plan_is_offline_and_read_only(self):
         with tempfile.TemporaryDirectory() as folder:
-            target = Path(folder) / "private-bin"
+            target = Path(folder).resolve() / "private-bin"
             with patch("official_core.forge.shutil.which", return_value=None), patch("official_core.forge.platform_key", return_value="linux-glibc-x86_64"), patch("official_core.forge.build_opener") as network:
                 report = execute_batch(["jq"], directory=str(target))
             self.assertEqual(report["status"], "planned")
@@ -31,7 +31,7 @@ class ForgeBatchTests(unittest.TestCase):
 
     def test_unapproved_second_item_prevents_all_downloads(self):
         with tempfile.TemporaryDirectory() as folder:
-            target = Path(folder) / "private-bin"
+            target = Path(folder).resolve() / "private-bin"
             with patch("official_core.forge.shutil.which", return_value=None), patch("official_core.forge.platform_key", return_value="linux-glibc-x86_64"), patch("official_core.forge.build_opener") as network:
                 with self.assertRaises(ValueError):
                     execute_batch(["jq", "nmap"], install=True, allow_network=True, directory=str(target))
