@@ -33,7 +33,7 @@ def plan(tool, directory=None):
     if key.startswith(("termux-", "android-")):
         found = shutil.which(tool)
         if found and Path(os.path.abspath(found)) != target:
-            return {"tool": tool, "path": found, "platform": key, "status": "system_available", "downloaded": False}
+            return {"tool": tool, "path": found, "platform": key, "status": "system_available", "downloaded": False, "directory": str(root)}
         raise ValueError("Android/Termux exige ferramenta nativa ja instalada; sem download Linux ou APK")
     selection = CATALOG[tool] if key == PLATFORM else PLATFORM_CATALOG[tool].get(key)
     if selection is None:
@@ -137,7 +137,7 @@ def copy_selected(package, destination, expected, key=PLATFORM, archive_format="
 def install_planned(item):
     target = Path(item["path"])
     # Re-resolve the fixed catalog before network; a modified plan is not authority.
-    if item != plan(item["tool"], target.parent):
+    if item != plan(item["tool"], item.get("directory", target.parent)):
         raise ValueError("Plano alterado ou sistema divergente")
     if item["status"] == "system_available":
         return item
