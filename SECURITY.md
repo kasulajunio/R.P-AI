@@ -1,9 +1,11 @@
 # Seguranca
 
-Nao envie vulnerabilidades com dados sensiveis em issue publica, redes sociais ou commit. Este repositorio e privado. Contate o titular por um canal privado que ja esteja autenticado; nao ha endereco de seguranca inventado nesta politica.
+Nao envie vulnerabilidades com dados sensiveis em issue publica, redes sociais ou commit. Contate o titular por um canal privado previamente autenticado ou pelo recurso de relato privado do GitHub se estiver habilitado. Nao invente endereco de seguranca.
 
-Inclua versao/commit, passos minimos, impacto e demonstracao com dados sinteticos. Nao explore sistemas ou dados de terceiros para comprovar o problema. Nao envie credenciais ou dumps reais.
+Inclua commit, passos minimos, impacto e demonstracao com dados sinteticos. Nao explore sistemas ou dados de terceiros. Nao envie credenciais ou dumps reais.
 
-Se um segredo vazar: revogue ou rotacione primeiro, investigue acesso, remova referencias ativas e avalie a limpeza do historico e de copias. Apagar o arquivo atual nao basta. Restrinja permissoes de colaboradores e evite tokens em URL de clone.
+Se um segredo vazar, revogue ou rotacione primeiro, investigue acessos e avalie limpeza do historico e de copias. Apagar o arquivo atual nao remove historico. Nao inclua tokens em URLs de clone. Publicar o repositorio expoe tambem commits e metadados.
 
-Escopo: somente a versao atual do motor. Sem SLA ou promessa de resposta imediata. Controle de caminhos nao substitui isolamento do sistema operacional. Nao foi feita auditoria profissional nem certificacao.
+A triagem automatica de alguns padroes em blobs Git nao e auditoria e pode ter falsos positivos ou negativos. Controle de caminhos nao substitui isolamento do sistema operacional. Nao use workspaces compartilhados com agentes hostis.
+
+Escopo: revisao atual do motor. Sem SLA, promessa de invulnerabilidade, auditoria profissional ou certificacao. Notas e backups nao sao criptografados e venv nao e sandbox.

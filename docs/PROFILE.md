@@ -1,11 +1,9 @@
-# Perfil GitHub e repositorio privado
+# Visibilidade e perfil
 
-Pedido do titular: manter este projeto privado e destaca-lo no inicio do perfil.
+O titular solicitou tornar R.P AI publico e liberado para qualquer uso. A revisao atual usa MIT. Visibilidade e licenca sao coisas diferentes: confirme o estado no GitHub antes de afirmar publicacao ou download aberto.
 
-Esses objetivos tem uma limitacao: a documentacao de perfis pessoais do GitHub permite fixar repositorios publicos. Um repositorio privado nao pode ser apresentado como um card publico normal. Isso nao muda concedendo uma licenca.
+A revisao de privacidade encontrou e-mail nos metadados historicos. Expor esse historico exige decisao informada do titular ou limpeza autorizada. Nao reescreva historico nem apague branches por inferencia.
 
-Referencia: https://docs.github.com/en/account-and-profile/reference/profile-reference#pinning-items-to-your-profile
+Nenhum outro repositorio, perfil, pin ou projeto deve ser apagado, ocultado ou alterado para publicar este. A mudanca de visibilidade deste projeto nao autoriza alterar o perfil inteiro.
 
-Nenhum repositorio existente deve ser apagado, ocultado, tornado privado ou desafixado automaticamente para cumprir a frase somente ele. Nenhum README publico de perfil foi criado nesta entrega.
-
-Alternativa futura, somente com autorizacao do titular: criar uma vitrine publica minima, sem codigo, credenciais ou dados privados, que descreva o projeto. Um link privado continuara inacessivel a visitantes sem permissao. Criar vitrine nao deve tornar este repositorio publico.
+Enquanto privado, visitantes sem permissao nao podem clonar ou baixar ZIP. Uma vitrine ou licenca aberta nao muda isso. Depois de publicar, validar a pagina sem autenticacao antes de anunciar acesso aberto.
