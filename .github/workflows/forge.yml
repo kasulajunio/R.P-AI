@@ -3,11 +3,18 @@ on:
   pull_request:
     paths:
       - official_core/forge.py
-      - tests/test_forge.py
+      - official_core/console.py
+      - official_core/launcher.py
+      - rpa.py
+      - pyproject.toml
+      - tests/test_forge*.py
       - .github/workflows/forge.yml
   workflow_dispatch:
 permissions:
   contents: read
+concurrency:
+  group: forge-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
 jobs:
   forge:
     name: Forge / ${{ matrix.os }} / Python ${{ matrix.python }}
@@ -23,9 +30,11 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: ${{ matrix.python }}
-      - name: Compile module
-        run: python -m py_compile official_core/forge.py tests/test_forge.py
-      - name: Offline Forge tests
-        run: python -m unittest discover -s tests -p test_forge.py -v
-      - name: Verify CLI help without downloads
+      - name: Compile module and integration
+        run: python -m py_compile official_core/forge.py official_core/console.py tests/test_forge.py tests/test_forge_cli.py
+      - name: Offline Forge and CLI tests
+        run: python -m unittest discover -s tests -p "test_forge*.py" -v
+      - name: Verify product CLI help without downloads
+        run: python rpa.py forge --help
+      - name: Verify standalone CLI help without downloads
         run: python -m official_core.forge --help
