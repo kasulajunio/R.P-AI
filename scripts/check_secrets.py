@@ -1,4 +1,4 @@
-"""Triagem local de blobs Git alcancaveis; nunca imprime valores."""
+"""Triagem do historico Git, sem imprimir valores de segredos. Nao e auditoria."""
 import re
 import subprocess
 import sys
@@ -35,7 +35,7 @@ def main():
         for object_id, label in findings:
             print("BLOCKED", object_id, label, "[REDACTED]")
         return 1
-    print("No matching credential patterns in", checked, "Git blobs. Not a security audit.")
+    print("No matching credential patterns in", checked, "reachable Git blobs. Not a security audit.")
     return 0
 
 

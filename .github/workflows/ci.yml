@@ -29,7 +29,7 @@ jobs:
       - name: Credential patterns in reachable history
         run: python scripts/check_secrets.py
       - name: Compile sources
-        run: python -m compileall -q official_core engine.py tests scripts
+        run: python -m compileall -q official_core boot.py engine.py tests scripts
       - name: Offline regression suite
         run: python -m unittest discover -s tests -v
       - name: Real end-to-end offline test
