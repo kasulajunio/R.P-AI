@@ -14,6 +14,7 @@ import shutil
 import stat
 import subprocess
 import sys
+import sysconfig
 import tempfile
 from urllib.parse import urlsplit
 from urllib.request import HTTPRedirectHandler, Request, build_opener
@@ -65,7 +66,11 @@ def platform_key():
     elif system == "android" or hasattr(sys, "getandroidapilevel") or (system == "linux" and os.environ.get("ANDROID_ROOT")):
         system = "android"
     elif system == "linux":
-        libc = platform.libc_ver()[0].lower() or "unknown"
+        libc = platform.libc_ver()[0].lower()
+        if not libc:
+            # Alpine CPython reports an empty libc_ver; use its target ABI.
+            target = str(sysconfig.get_config_var("HOST_GNU_TYPE") or "").lower()
+            libc = "musl" if re.search(r"-musl(?:eabi(?:hf)?)?$", target) else "unknown"
         system = "linux-" + libc
     return system + "-" + arch
 
