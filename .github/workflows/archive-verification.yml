@@ -3,20 +3,23 @@ on:
   push:
     branches: [feat/official-foundation]
     paths:
-      - official_core/console.py
-      - official_core/forge_command.py
-      - official_core/forge_archives.py
-      - tests/test_forge_command.py
-      - tests/test_forge_archives.py
+      - official_core/forge*.py
+      - tests/test_forge*.py
       - scripts/verify_archive_download.py
       - .github/workflows/archive-verification.yml
+  workflow_dispatch:
 permissions:
   contents: read
 jobs:
-  native-arm64:
-    if: contains(github.event.head_commit.message, '[verify-archives-once]')
-    runs-on: ubuntu-24.04-arm
+  native:
+    if: github.event_name == workflow_dispatch || contains(github.event.head_commit.message, [verify-archives-once])
+    name: Native archives / ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
     timeout-minutes: 10
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, ubuntu-24.04-arm, windows-latest, macos-15-intel, macos-15]
     steps:
       - uses: actions/checkout@v4
         with:
@@ -33,7 +36,7 @@ jobs:
         run: python -m unittest discover -s tests -v
       - name: Offline smoke test
         run: python scripts/smoke.py
-      - name: Explicit real CLI download and functional ARM64 tests
+      - name: Explicit real CLI downloads and native functional tests
         env:
           PYTHONPATH: .
         run: python scripts/verify_archive_download.py
