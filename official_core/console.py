@@ -88,6 +88,9 @@ def main(argv=None):
     if unknown:
         parser.error("argumentos nao reconhecidos")
     if args.command == "forge":
+        # Repositorios e URLs nao sao nomes; rejeite antes de delegar.
+        if any("/" in tool or "\\" in tool or ":" in tool for tool in args.tool):
+            parser.error("Use somente nomes do catalogo, nunca repositorios ou URLs")
         # Nao cria workspace nem relatorios: plan e estritamente somente leitura.
         forwarded = [args.action, *args.tool]
         if args.directory is not None:
