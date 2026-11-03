@@ -4,6 +4,7 @@ import argparse
 import json
 import sys
 import tarfile
+import zipfile
 from . import forge_archives
 from .forge import CATALOG, Forge
 
@@ -18,7 +19,6 @@ def execute(tools, *, directory=None, install=False, allow_network=False):
     if any(tool not in approved for tool in tools):
         raise ValueError("Ferramenta fora do catalogo aprovado")
     forge = Forge(directory)
-    # Resolve the entire mixed batch before any possible network request.
     plans = []
     for tool in tools:
         if tool in forge_archives.CATALOG:
@@ -35,7 +35,7 @@ def execute(tools, *, directory=None, install=False, allow_network=False):
             else:
                 result = {"tool": item["tool"], **forge.ensure(item["tool"], install=True)}
             completed.append(result)
-        except (OSError, ValueError, RuntimeError, tarfile.TarError, EOFError) as error:
+        except (OSError, ValueError, RuntimeError, tarfile.TarError, zipfile.BadZipFile, EOFError) as error:
             return {"status": "partial" if completed else "failed", "mode": "install",
                     "items": completed, "failed_tool": item["tool"],
                     "error_type": type(error).__name__, "not_attempted": list(tools[index + 1:])}

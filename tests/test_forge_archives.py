@@ -43,12 +43,15 @@ def configured(data, digest=None, size=None):
         yield network
 
 
-@unittest.skipIf(os.name == "nt", "POSIX archive fixtures; real execution is tested on native Linux ARM64")
+@unittest.skipIf(os.name == "nt", "POSIX permission fixtures; separate ZIP fixtures cover Windows")
 class ArchiveTests(unittest.TestCase):
     def setUp(self):
         self.temp = tempfile.TemporaryDirectory()
         self.addCleanup(self.temp.cleanup)
         self.root = Path(self.temp.name).resolve() / "bin"
+        self.which = patch("official_core.forge_archives.shutil.which", return_value=None)
+        self.which.start()
+        self.addCleanup(self.which.stop)
 
     def install(self):
         return archives.batch(["rg"], str(self.root), install=True, allow_network=True)
@@ -76,21 +79,14 @@ class ArchiveTests(unittest.TestCase):
         self.assertFalse(self.root.exists())
 
     def test_unsupported_abi_has_no_network(self):
-        for platform in ("linux-glibc-x86_64", "termux-aarch64", "android-aarch64", "linux-musl-aarch64"):
+        for platform in ("linux-unknown-x86_64", "termux-aarch64", "android-aarch64", "freebsd-aarch64"):
             with self.subTest(platform=platform), patch.object(archives, "platform_key", return_value=platform), patch.object(archives, "build_opener") as network, self.assertRaises(ValueError):
                 self.install()
             network.assert_not_called()
         self.assertFalse(self.root.exists())
 
     def test_invalid_archives_leave_no_published_binary(self):
-        entries = [
-            [("pkg/rg", ELF), ("../outside", b"bad")],
-            [("pkg/rg", ELF), ("/outside", b"bad")],
-            [("pkg/rg", ELF), ("pkg/link", None)],
-            [("pkg/rg", ELF), ("pkg/rg", ELF)],
-            [("pkg/other", ELF)],
-            [("pkg/rg", b"not an ELF binary")],
-        ]
+        entries = [[("pkg/rg", ELF), ("../outside", b"bad")], [("pkg/rg", ELF), ("/outside", b"bad")], [("pkg/rg", ELF), ("pkg/link", None)], [("pkg/rg", ELF), ("pkg/rg", ELF)], [("pkg/other", ELF)], [("pkg/rg", b"not an ELF binary")]]
         for members in entries:
             with self.subTest(members=members), configured(package(members)):
                 report = self.install()
