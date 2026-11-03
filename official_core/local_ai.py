@@ -1,7 +1,6 @@
 # SPDX-License-Identifier: MIT
 """Ollama local opt-in. Nao baixa modelos nem executa comandos."""
 import json
-import math
 from urllib.error import HTTPError, URLError
 from urllib.request import HTTPRedirectHandler, ProxyHandler, Request, build_opener
 
@@ -20,20 +19,28 @@ class _NoRedirect(HTTPRedirectHandler):
         raise LocalAIError("Redirecionamento recusado: o modelo deve permanecer local")
 
 
+def _check_unicode(value):
+    try:
+        value.encode("utf-8")
+    except UnicodeError:
+        raise LocalAIError("Texto contem Unicode invalido") from None
+
+
 def chat(messages, model=DEFAULT_MODEL, *, timeout=180):
-    if model not in MODELS:
+    if not isinstance(model, str) or model not in MODELS:
         raise LocalAIError("Escolha um modelo local documentado; modelos cloud nao sao aceitos")
-    if not isinstance(timeout, (int, float)) or not math.isfinite(timeout) or not 1 <= timeout <= 600:
+    if type(timeout) not in (int, float) or not 1 <= timeout <= 600:
         raise LocalAIError("Timeout deve estar entre 1 e 600 segundos")
     if not isinstance(messages, list) or not 1 <= len(messages) <= 32:
         raise LocalAIError("Historico deve conter entre 1 e 32 mensagens")
     clean = []
     for message in messages:
-        if not isinstance(message, dict) or message.get("role") not in {"system", "user", "assistant"}:
+        if not isinstance(message, dict) or not isinstance(message.get("role"), str) or message["role"] not in {"system", "user", "assistant"}:
             raise LocalAIError("Papel de mensagem invalido")
         content = message.get("content")
         if not isinstance(content, str) or not content.strip() or len(content) > 16000:
             raise LocalAIError("Mensagem vazia ou acima de 16000 caracteres")
+        _check_unicode(content)
         clean.append({"role": message["role"], "content": content})
     body = json.dumps({"model": model, "messages": clean, "stream": False, "options": {"num_ctx": 4096, "num_predict": 1536, "temperature": 0.2}}, ensure_ascii=False).encode("utf-8")
     if len(body) > MAX_BYTES:
@@ -54,7 +61,7 @@ def chat(messages, model=DEFAULT_MODEL, *, timeout=180):
         raise LocalAIError("O servidor local recusou a solicitacao (HTTP " + str(code) + ")") from None
     except (URLError, OSError):
         raise LocalAIError("Ollama indisponivel ou demorou demais. Inicie ollama serve em outra sessao do Termux") from None
-    except (UnicodeError, ValueError):
+    except (UnicodeError, ValueError, RecursionError):
         raise LocalAIError("O servidor local devolveu uma resposta invalida") from None
     if not isinstance(result, dict) or result.get("done") is not True:
         raise LocalAIError("Resposta incompleta; nenhum resultado foi tratado como concluido")
@@ -64,4 +71,5 @@ def chat(messages, model=DEFAULT_MODEL, *, timeout=180):
     text = message.get("content")
     if not isinstance(text, str) or not text.strip():
         raise LocalAIError("O modelo nao produziu texto")
+    _check_unicode(text)
     return text.strip()
