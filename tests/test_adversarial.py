@@ -1,7 +1,7 @@
 # SPDX-License-Identifier: MIT
 """Bounded, reproducible offline adversarial checks. Synthetic faults are explicit."""
 from concurrent.futures import ThreadPoolExecutor
-from contextlib import contextmanager
+from contextlib import contextmanager, closing
 import errno
 import io
 import json
@@ -103,7 +103,7 @@ class AdversarialTests(unittest.TestCase):
             self.engine.add_note("note-" + str(i), "body")
         result = Database(self.engine).backup("snapshot.sqlite3")
         snapshot = Path(result["path"])
-        with sqlite3.connect(snapshot) as db:
+        with closing(sqlite3.connect(snapshot)) as db:
             self.assertEqual(db.execute("PRAGMA integrity_check").fetchone()[0], "ok")
             self.assertEqual(db.execute("SELECT count(*) FROM notes").fetchone()[0], 128)
         original = snapshot.read_bytes()
