@@ -1,0 +1,106 @@
+name: Miniapp contract regression
+on:
+  push:
+    branches: [fix/miniapp-contract-20261103]
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: miniapp-contract-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  regression:
+    name: Regression / ${{ matrix.os }} / Python ${{ matrix.python }}
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 10
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-15-intel]
+        python: ["3.10", "3.12"]
+    env:
+      PYTHONPATH: .
+      PYTHONUTF8: "1"
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python }}
+      - run: python scripts/check_secrets.py
+      - run: python -m compileall -q official_core tests scripts
+      - name: Full regression including wrong-id fixture
+        shell: bash
+        run: |
+          set -o pipefail
+          python -m unittest discover -s tests -v 2>&1 | tee regression.log
+      - run: python scripts/smoke.py
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: contract-${{ matrix.os }}-${{ matrix.python }}
+          path: regression.log
+  real-ai:
+    name: Real CPU model and unchanged browser assertions
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      OLLAMA_HOST: 127.0.0.1:11434
+      OLLAMA_NO_CLOUD: "1"
+      OLLAMA_NUM_PARALLEL: "1"
+      OLLAMA_MODELS: /tmp/rpa-contract-models
+      CUDA_VISIBLE_DEVICES: "-1"
+      ROCR_VISIBLE_DEVICES: "-1"
+      OLLAMA_VULKAN: "0"
+      PYTHONPATH: .
+      PYTHONUTF8: "1"
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Pinned runtime on disposable runner
+        shell: bash
+        run: |
+          set -euo pipefail
+          curl --fail --location --retry 3 --output "$RUNNER_TEMP/ollama.tar.zst" https://github.com/ollama/ollama/releases/download/v0.40.14/ollama-linux-amd64.tar.zst
+          printf "993e83d08c3d13d17c55009a3e2664c8a25445e644aec3a68bef5abb6abce67d  %s\n" "$RUNNER_TEMP/ollama.tar.zst" | sha256sum --check -
+          mkdir -p "$RUNNER_TEMP/ollama"
+          tar --zstd -xf "$RUNNER_TEMP/ollama.tar.zst" -C "$RUNNER_TEMP/ollama"
+          "$RUNNER_TEMP/ollama/bin/ollama" serve > "$RUNNER_TEMP/ollama.log" 2>&1 &
+          for attempt in $(seq 1 60); do
+            if curl --fail --silent http://127.0.0.1:11434/api/version; then break; fi
+            sleep 1
+          done
+          curl --fail --silent http://127.0.0.1:11434/api/version
+          "$RUNNER_TEMP/ollama/bin/ollama" pull qwen2.5-coder:0.5b
+      - name: Real inference and default counter
+        run: python scripts/ai_smoke.py
+      - name: Original four variants twice
+        shell: bash
+        run: |
+          set -euo pipefail
+          for round in 1 2; do
+            python scripts/ai_variants.py
+            mv ai-variant-artifacts "ai-variant-artifacts-$round"
+            mv ai-variants-evidence.json "ai-variants-evidence-$round.json"
+          done
+      - name: Confirm CPU
+        if: always()
+        run: |
+          "$RUNNER_TEMP/ollama/bin/ollama" ps | tee cpu-evidence.txt
+          grep -q "100% CPU" cpu-evidence.txt
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: miniapp-contract-real-ai
+          path: |
+            ai-evidence.json
+            ai-variants-evidence*.json
+            ai-variant-artifacts*/
+            cpu-evidence.txt
+          retention-days: 7
