@@ -1,6 +1,7 @@
 # SPDX-License-Identifier: MIT
 """Validate explicit HTML identifiers without executing generated code."""
 from collections import defaultdict
+from html import escape
 from html.parser import HTMLParser
 import re
 import time
@@ -20,8 +21,8 @@ def requested_ids(prompt):
     for match in ID_PATTERN.finditer(prompt):
         identifier = next(value for value in match.groups() if value is not None)
         prefix = prompt[:match.start()]
-        # In prose, the final full stop terminates the sentence, not the ID.
-        # Quoted values and attributes inside explicit HTML remain literal.
+        # Sentence punctuation is not part of unquoted prose identifiers.
+        # Quoted values and explicit HTML attributes remain literal.
         inside_html = prefix.rfind("<") > prefix.rfind(">")
         if match.group(3) is not None and not inside_html:
             identifier = identifier.rstrip(".")
@@ -31,7 +32,24 @@ def requested_ids(prompt):
     return result
 
 
+def contract_hint(requirements):
+    if not requirements:
+        return ""
+    lines = []
+    # Hints are bounded; validation below still checks ALL requirements.
+    for identifier, tag in list(requirements.items())[:64]:
+        attribute = "id=\"" + escape(identifier, quote=True) + "\""
+        lines.append("<" + tag + " " + attribute + ">" if tag else attribute + " on any element")
+    return ("\nMandatory HTML elements, each exactly once. Use these EXACT tags and ids, not alternatives.\n"
+            + "\n".join(lines)[:8000] + "\nKeep the behavior requested by the user.")
+
+
 class Identifiers(HTMLParser):
+    # Nested markup in these elements is text or fallback, not live controls
+    # in the JavaScript-enabled preview. Preserve the containing element ID.
+    CDATA_CONTENT_ELEMENTS = HTMLParser.CDATA_CONTENT_ELEMENTS + (
+        "textarea", "title", "iframe", "xmp", "noembed", "noframes", "noscript")
+
     def __init__(self):
         super().__init__(convert_charrefs=True)
         self.elements = defaultdict(list)
@@ -70,13 +88,14 @@ def violations(document, requirements):
 
 def generate_document(prompt, *, model=local_ai.DEFAULT_MODEL, timeout=180):
     requirements = requested_ids(prompt)
+    system = SYSTEM + contract_hint(requirements)
     started = time.monotonic()
     correction = ""
     for attempt in range(2):
         remaining = timeout if attempt == 0 else timeout - (time.monotonic() - started)
         if attempt and remaining < 1:
             raise local_ai.LocalAIError("Tempo de geracao esgotado; nenhum app foi salvo")
-        messages = [{"role": "system", "content": SYSTEM},
+        messages = [{"role": "system", "content": system},
                     {"role": "user", "content": prompt + correction}]
         answer = local_ai.chat(messages, model, timeout=remaining)
         match = HTML_PATTERN.search(answer)

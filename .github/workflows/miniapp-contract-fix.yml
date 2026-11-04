@@ -85,7 +85,7 @@ jobs:
         run: |
           set -euo pipefail
           for round in 1 2; do
-            python scripts/ai_variants.py
+            python scripts/ai_contract_diagnostics.py
             mv ai-variant-artifacts "ai-variant-artifacts-$round"
             mv ai-variants-evidence.json "ai-variants-evidence-$round.json"
           done
@@ -101,6 +101,7 @@ jobs:
           path: |
             ai-evidence.json
             ai-variants-evidence*.json
+            ai-contract-diagnostics*.json
             ai-variant-artifacts*/
             cpu-evidence.txt
           retention-days: 7
