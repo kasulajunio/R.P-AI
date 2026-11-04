@@ -6,6 +6,7 @@ import re
 import sys
 import unicodedata
 from . import local_ai
+from .app_contract import generate_document
 from .engine import MasterEngine
 
 SYSTEM = "Voce e R.P AI. Responda em portugues brasileiro. Seja claro e honesto. Nao afirme ter executado comandos ou controlado o celular: voce so produz texto."
@@ -55,22 +56,20 @@ def create_app(root, name, *, template="counter", prompt=None, model=local_ai.DE
     target = engine.path(relative)
     if target.exists():
         raise FileExistsError("Miniapp existente: escolha outro nome; nada foi sobrescrito")
+    generation_attempts = 0
     if prompt is None:
         document = _template(template, name)
         source = "offline_template"
     else:
         if not prompt.strip() or len(prompt) > 8000:
             raise ValueError("Pedido deve ter entre 1 e 8000 caracteres")
-        answer = local_ai.chat([{"role": "system", "content": "Crie apenas um documento HTML completo pequeno, com html, head e body. Use CSS e JavaScript inline, sem rede, armazenamento, formularios, permissoes ou dependencias. Deve funcionar pelo toque no celular. Termine com </html>."}, {"role": "user", "content": prompt}], model, timeout=timeout)
-        match = re.search(r"(?:<!doctype\s+html[^>]*>\s*)?<html(?:\s[^>]*)?>.*?</html\s*>", answer, flags=re.I | re.S)
-        if not match:
-            raise local_ai.LocalAIError("O modelo nao entregou HTML completo. Tente um pedido menor; nenhum app foi salvo")
-        embedded = html.escape(match.group(0), quote=True)
+        generated_html, generation_attempts = generate_document(prompt, model=model, timeout=timeout)
+        embedded = html.escape(generated_html, quote=True)
         document = _page(name, "<h1>" + html.escape(name) + "</h1><p>Rascunho de IA. Revise antes de abrir. Nao forneca dados pessoais.</p><iframe title=\"Rascunho do miniapp\" sandbox=\"allow-scripts\" referrerpolicy=\"no-referrer\" srcdoc=\"" + embedded + "\"></iframe>")
         source = "local_model_unreviewed"
     if not engine._write_new(relative, document):
         raise FileExistsError("Destino criado por outra operacao; nada foi sobrescrito")
-    return {"status": "html_created", "path": str(target), "source": source, "apk": False, "executed": False, "functional_tested": False}
+    return {"status": "html_created", "path": str(target), "source": source, "apk": False, "executed": False, "functional_tested": False, "generation_attempts": generation_attempts}
 
 
 def run(args):
