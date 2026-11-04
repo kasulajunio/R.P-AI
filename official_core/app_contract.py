@@ -19,7 +19,13 @@ def requested_ids(prompt):
     result = {}
     for match in ID_PATTERN.finditer(prompt):
         identifier = next(value for value in match.groups() if value is not None)
-        tag = TAG_PATTERN.search(prompt[:match.start()])
+        prefix = prompt[:match.start()]
+        # In prose, the final full stop terminates the sentence, not the ID.
+        # Quoted values and attributes inside explicit HTML remain literal.
+        inside_html = prefix.rfind("<") > prefix.rfind(">")
+        if match.group(3) is not None and not inside_html:
+            identifier = identifier.rstrip(".")
+        tag = TAG_PATTERN.search(prefix)
         if identifier not in result or tag:
             result[identifier] = tag.group(1).lower() if tag else None
     return result
